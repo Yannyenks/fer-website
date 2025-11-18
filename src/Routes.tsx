@@ -1,9 +1,9 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 
-import AwardsHome from "./components/pages/awards/AwardsHome";
-import Candidates from "./components/pages/awards/Candidates";
-import Vote from "./src/components/pages/awards/Vote";
+import AwardsHome from "./concours/pages/AwardsPage";
+import Candidates from "./concours/pages/CandidatesPage";
+import CandidateProfile from "./concours/pages/CandidateProfile";
 
 import App from "./App";
 
@@ -14,7 +14,7 @@ export default function RouterFile() {
 
       <Route path="/awards" element={<AwardsHome />} />
       <Route path="/awards/candidates" element={<Candidates />} />
-      <Route path="/awards/vote/:id" element={<Vote />} />
+      <Route path="/awards/candidate/:id" element={<CandidateProfile />} />
     </Routes>
   );
 }

@@ -8,8 +8,7 @@ const Hero: React.FC = () => {
       id="hero"
       className="relative h-screen flex items-center justify-center text-center text-white bg-cover bg-center"
       style={{
-        backgroundImage:
-          "url('https://picsum.photos/1920/1080?grayscale&blur=2')",
+        backgroundImage: `url('${AppImage.GALLERY.IMAGE_3}')`,
       }}
     >
       <div className="absolute inset-0 bg-custom-green opacity-80"></div>

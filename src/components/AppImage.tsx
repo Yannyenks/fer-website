@@ -7,21 +7,21 @@ import React from 'react';
  */
 abstract class AppImage {
   static readonly GALLERY = {
-    IMAGE_1: '/src/assets/image 1.jpeg',
-    IMAGE_2: '/src/assets/image 2.jpeg',
-    IMAGE_3: '/src/assets/image 3.jpeg',
-    IMAGE_4: '/src/assets/image 4.jpeg',
-    IMAGE_5: '/src/assets/image 5.jpeg',
-    IMAGE_6: '/src/assets/image 6.jpeg',
-    IMAGE_7: '/src/assets/image 7.jpeg',
-    IMAGE_8: '/src/assets/image 8.jpeg',
-    IMAGE_9: '/src/assets/image 9.jpeg',
-    IMAGE_10: '/src/assets/image 10.jpeg',
-    IMAGE_11: '/src/assets/image 11.jpeg',
-    IMAGE_12: '/src/assets/image 12.jpeg',
-    IMAGE_13: '/src/assets/image 13.jpeg',
-    IMAGE_14: '/src/assets/image 14.jpeg',
-    LOGO: '/src/assets/logo/logo.png',
+    IMAGE_1: '/assets/images/image 1.jpeg',
+    IMAGE_2: '/assets/images/image 2.jpeg',
+    IMAGE_3: '/assets/images/image 3.jpeg',
+    IMAGE_4: '/assets/images/image 4.jpeg',
+    IMAGE_5: '/assets/images/image 5.jpeg',
+    IMAGE_6: '/assets/images/image 6.jpeg',
+    IMAGE_7: '/assets/images/image 7.jpeg',
+    IMAGE_8: '/assets/images/image 8.jpeg',
+    IMAGE_9: '/assets/images/image 9.jpeg',
+    IMAGE_10: '/assets/images/image 10.jpeg',
+    IMAGE_11: '/assets/images/image 11.jpeg',
+    IMAGE_12: '/assets/images/image 12.jpeg',
+    IMAGE_13: '/assets/images/image 13.jpeg',
+    IMAGE_14: '/assets/images/image 14.jpeg',
+    LOGO: '/assets/logo/logo.png',
   } as const;
 
   static getAll(): string[] {
