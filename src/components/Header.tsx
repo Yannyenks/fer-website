@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from './AuthProvider';
 import { Link } from 'react-router-dom';
 import { HeartLogo } from './icons/HeartLogo';
+import AppImage from './AppImage';
 
 interface NavLink {
   title: string;
@@ -47,9 +48,9 @@ const Header: React.FC<HeaderProps> = ({ navLinks }) => {
       <div className="container mx-auto px-6 py-3 flex justify-between items-center">
 
         {/* LOGO */}
-        <Link to="/" className="flex items-center space-x-2">
-          <HeartLogo className="h-10 w-10 text-custom-green cursor-pointer" />
-          <span className="text-xl font-bold text-gray-800 cursor-pointer">JVEPI Centre</span>
+        <Link to="/" className="flex items-center space-x-4">
+          <AppImage.LOGO className="h-10 w-10 object-contain cursor-pointer" />
+          <span className="text-xl font-bold text-gray-800 cursor-pointer h-10 flex items-center">JVEPI Centre</span>
         </Link>
 
         {/* NAVIGATION DESKTOP */}

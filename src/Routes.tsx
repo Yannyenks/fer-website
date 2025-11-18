@@ -3,7 +3,7 @@ import { Routes, Route } from "react-router-dom";
 
 import AwardsHome from "./components/pages/awards/AwardsHome";
 import Candidates from "./components/pages/awards/Candidates";
-import Vote from "./components/pages/awards/Vote";
+import Vote from "./src/components/pages/awards/Vote";
 
 import App from "./App";
 
