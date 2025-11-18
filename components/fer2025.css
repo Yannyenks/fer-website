@@ -1,0 +1,116 @@
+:root{
+  --fer-green: #276749; /* deep green */
+  --fer-olive: #4C9A2A; /* olive */
+  --fer-earth: #8B5E3C; /* earth */
+  --fer-beige: #F5F1E6; /* beige background */
+  --fer-wood: #C9A66B; /* light wood */
+  --text: #16321A;
+}
+
+.fer.root{
+  background: var(--fer-beige);
+  color: var(--text);
+  padding: 48px 16px;
+}
+
+.fer__container{
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.fer__hero{
+  text-align: center;
+  padding: 28px 18px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(76,154,42,0.06), transparent 60%);
+  margin-bottom: 24px;
+}
+
+.fer__title{
+  font-size: 1.6rem;
+  color: var(--fer-green);
+  margin: 0 0 8px 0;
+}
+
+.fer__subtitle{
+  color: #33443a;
+  max-width: 900px;
+  margin: 0 auto 12px auto;
+}
+
+.fer__cta{
+  display: inline-block;
+  background: var(--fer-olive);
+  color: white;
+  padding: 10px 18px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.fer__section-title{
+  color: var(--fer-earth);
+  margin: 10px 0 8px 0;
+}
+
+.fer__context{
+  background: white;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 22px;
+}
+
+.fer__grid{
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.fer__card{
+  background: white;
+  padding: 18px;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+.fer__card h4{ margin: 0 0 8px 0; color: var(--fer-green); }
+
+.fer__fig-list{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.fer__fig{
+  flex: 1 1 45%;
+  background: linear-gradient(180deg, rgba(194,150,97,0.06), transparent);
+  border-radius: 6px;
+  padding: 10px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+
+.fer__fig .num{ font-size:1.35rem; font-weight:700; color:var(--fer-earth); }
+.fer__fig .label{ color:#4b4b3d; font-size:0.9rem; }
+
+.fer__timeline{ margin-bottom: 20px; }
+.fer__timeline-list{ list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:12px; }
+.fer__timeline-list li{ background:white; padding:12px; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.05);} 
+
+.fer__footer{ text-align:center; margin-top:10px; color:#2f3b31; }
+
+/* Responsive layout */
+@media (min-width:720px){
+  .fer__grid{ grid-template-columns: repeat(2, 1fr); }
+  .fer__fig{ flex: 1 1 45%; }
+  .fer__timeline-list{ flex-direction:row; }
+  .fer__timeline-list li{ flex:1; }
+}
+
+@media (min-width:1100px){
+  .fer__hero{ padding: 40px 24px; }
+  .fer__title{ font-size:2rem; }
+  .fer__grid{ grid-template-columns: repeat(4, 1fr); gap:18px; }
+}

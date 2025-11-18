@@ -1,10 +1,12 @@
 import React from "react";
 import CandidateCard from "../components/CandidateCard";
-import { mockCandidates } from "../data/mock";
+import { getAllCandidates } from "../services/candidateService";
 import { useNavigate } from "react-router-dom";
 
 const CandidatesPage: React.FC = () => {
   const navigate = useNavigate();
+
+  const candidates = getAllCandidates();
 
   return (
     <div className="min-h-screen bg-[#0c0c0c] text-white px-6 py-16">
@@ -15,7 +17,7 @@ const CandidatesPage: React.FC = () => {
       </h1>
 
       <div className="grid md:grid-cols-3 gap-10">
-        {mockCandidates.map((c) => (
+        {candidates.map((c) => (
           <CandidateCard
             key={c.id}
             candidate={c}

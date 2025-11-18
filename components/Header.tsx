@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from './AuthProvider';
+import { Link } from 'react-router-dom';
 import { HeartLogo } from './icons/HeartLogo';
 
 interface NavLink {
@@ -15,6 +17,7 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ navLinks }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -44,16 +47,20 @@ const Header: React.FC<HeaderProps> = ({ navLinks }) => {
       <div className="container mx-auto px-6 py-3 flex justify-between items-center">
 
         {/* LOGO */}
-        <div
-          className="flex items-center space-x-2 cursor-pointer"
-          onClick={() => scrollToSection('hero')}
-        >
-          <HeartLogo className="h-10 w-10 text-custom-green" />
-          <span className="text-xl font-bold text-gray-800">JVEPI Centre</span>
-        </div>
+        <Link to="/" className="flex items-center space-x-2">
+          <HeartLogo className="h-10 w-10 text-custom-green cursor-pointer" />
+          <span className="text-xl font-bold text-gray-800 cursor-pointer">JVEPI Centre</span>
+        </Link>
 
         {/* NAVIGATION DESKTOP */}
         <nav className="hidden md:flex items-center space-x-8">
+          <Link to="/" className="text-gray-700 hover:text-[#4A7C2A] font-semibold transition-colors">Accueil</Link>
+          {user && user.role === 'admin' && (
+            <>
+              <Link to="/admin" className="text-gray-700 hover:text-[#4A7C2A] font-semibold transition-colors">Admin</Link>
+              <Link to="/actions" className="text-gray-700 hover:text-[#4A7C2A] font-semibold transition-colors">Actions (admin)</Link>
+            </>
+          )}
           {navLinks.map((link, index) =>
             link.isButton ? (
               // --- BOUTON PREMIUM ---
@@ -123,6 +130,7 @@ const Header: React.FC<HeaderProps> = ({ navLinks }) => {
       {isOpen && (
         <div className="md:hidden bg-white shadow-lg">
           <nav className="flex flex-col items-center py-4">
+            <Link to="/" className="py-2 text-gray-700 hover:text-[#4A7C2A] font-semibold w-full text-center">Accueil</Link>
             {navLinks.map((link, index) =>
               link.isButton ? (
                 <a

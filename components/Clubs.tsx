@@ -1,6 +1,8 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Section, { SectionTitle } from './Section';
+import { getSectionImage } from './sectionImageService';
+import { findProjectAsset } from './assetLoader';
 
 const ClubTag: React.FC<{ children: React.ReactNode, delay?: string }> = ({ children, delay='0ms' }) => (
     <span className="inline-block bg-white text-gray-700 font-semibold px-4 py-2 rounded-full shadow-md transform hover:scale-110 hover:bg-custom-green hover:text-white transition-all duration-300" style={{ transitionDelay: delay }}>
@@ -20,7 +22,7 @@ const Clubs: React.FC = () => {
       <SectionTitle withHeart>CLUBS EXISTANTS</SectionTitle>
       <div className="flex flex-col lg:flex-row items-center gap-12">
         <div className="lg:w-1/2">
-            <img src="https://picsum.photos/800/600?random=3" alt="Club Activities" className="rounded-2xl shadow-2xl w-full h-auto object-cover"/>
+          <img src={useClubsImage()} alt="Club Activities" className="rounded-2xl shadow-2xl w-full h-auto object-cover"/>
         </div>
         <div className="lg:w-1/2 flex flex-wrap gap-4 justify-center">
             {clubsList.map((club, index) => (
@@ -33,3 +35,18 @@ const Clubs: React.FC = () => {
 };
 
 export default Clubs;
+
+function useClubsImage() {
+  const [src, setSrc] = useState<string>(getSectionImage('clubs') || 'https://picsum.photos/800/600?random=3');
+  useEffect(() => {
+    let mounted = true;
+    const override = getSectionImage('clubs');
+    if (override) {
+      setSrc(override);
+      return () => { mounted = false; };
+    }
+    findProjectAsset('clubs').then(a => { if (mounted && a) setSrc(a); });
+    return () => { mounted = false; };
+  }, []);
+  return src;
+}

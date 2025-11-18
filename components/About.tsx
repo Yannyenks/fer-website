@@ -1,9 +1,31 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { getSectionImage } from './sectionImageService';
+import { findProjectAsset } from './assetLoader';
 import Section, { SectionTitle } from './Section';
 import { HeartLogo } from './icons/HeartLogo';
 
-const InfoBlock: React.FC<{ title: string; children: React.ReactNode; imageSrc: string; reverse?: boolean }> = ({ title, children, imageSrc, reverse = false }) => {
+const InfoBlock: React.FC<{ title: string; children: React.ReactNode; imageSrc: string; reverse?: boolean; sectionId?: string }> = ({ title, children, imageSrc, reverse = false, sectionId }) => {
+  const [src, setSrc] = useState<string>(imageSrc);
+
+  useEffect(() => {
+    let mounted = true;
+    const override = sectionId ? getSectionImage(sectionId) : null;
+    if (override) {
+      setSrc(override);
+      return undefined;
+    }
+
+    // try to find a project asset matching the sectionId
+    if (sectionId) {
+      findProjectAsset(sectionId).then((asset) => {
+        if (mounted && asset) setSrc(asset);
+      });
+    }
+
+    return () => { mounted = false; };
+  }, [imageSrc, sectionId]);
+
   return (
     <div className={`flex flex-col md:flex-row items-center gap-12 lg:gap-16 ${reverse ? 'md:flex-row-reverse' : ''}`}>
       <div className="md:w-1/2">
@@ -16,7 +38,7 @@ const InfoBlock: React.FC<{ title: string; children: React.ReactNode; imageSrc: 
         </p>
       </div>
       <div className="md:w-1/2">
-        <img src={imageSrc} alt={title} className="rounded-2xl shadow-2xl w-full h-auto object-cover transform hover:scale-105 transition-transform duration-500" />
+        <img src={src} alt={title} className="rounded-2xl shadow-2xl w-full h-auto object-cover transform hover:scale-105 transition-transform duration-500" />
       </div>
     </div>
   );
@@ -33,10 +55,10 @@ const About: React.FC = () => {
       </div>
 
       <div className="space-y-20">
-        <InfoBlock title="OBJECTIF GLOBAL" imageSrc="https://picsum.photos/800/600?random=1">
+        <InfoBlock title="OBJECTIF GLOBAL" imageSrc="https://picsum.photos/800/600?random=1" sectionId="about-1">
           Promouvoir le bien-être des jeunes au sein du Centre, identifier et mettre en place des actions adaptées pour accompagner leur réussite.
         </InfoBlock>
-        <InfoBlock title="NOTRE MISSION" imageSrc="https://picsum.photos/800/600?random=2" reverse>
+        <InfoBlock title="NOTRE MISSION" imageSrc="https://picsum.photos/800/600?random=2" reverse sectionId="about-2">
           Créer un environnement sain et dynamique pour les jeunes, leur permettant de s'épanouir et de devenir des acteurs de leur propre vie.
         </InfoBlock>
       </div>

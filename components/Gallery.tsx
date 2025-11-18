@@ -1,6 +1,8 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Section, { SectionTitle } from './Section';
+import { getSectionImage } from './sectionImageService';
+import { findProjectAsset } from './assetLoader';
 
 const GalleryImage: React.FC<{ src: string; alt: string; className?: string; }> = ({ src, alt, className = '' }) => (
   <div className={`overflow-hidden rounded-2xl shadow-lg ${className}`}>
@@ -17,7 +19,7 @@ const Gallery: React.FC = () => {
     <Section>
       <SectionTitle>QUELQUES PHOTOS</SectionTitle>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <GalleryImage src="https://picsum.photos/500/800?random=10" alt="Gallery image 1" className="md:col-span-2 md:row-span-2" />
+        <GalleryImage src={useGalleryImage()} alt="Gallery image 1" className="md:col-span-2 md:row-span-2" />
         <GalleryImage src="https://picsum.photos/500/500?random=11" alt="Gallery image 2" />
         <GalleryImage src="https://picsum.photos/500/500?random=12" alt="Gallery image 3" />
         <GalleryImage src="https://picsum.photos/500/500?random=13" alt="Gallery image 4" />
@@ -29,5 +31,20 @@ const Gallery: React.FC = () => {
     </Section>
   );
 };
+
+function useGalleryImage() {
+  const [src, setSrc] = useState<string>(getSectionImage('gallery-1') || 'https://picsum.photos/500/800?random=10');
+  useEffect(() => {
+    let mounted = true;
+    const override = getSectionImage('gallery-1');
+    if (override) {
+      setSrc(override);
+      return () => { mounted = false; };
+    }
+    findProjectAsset('gallery-1').then(a => { if (mounted && a) setSrc(a); });
+    return () => { mounted = false; };
+  }, []);
+  return src;
+}
 
 export default Gallery;
