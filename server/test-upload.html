@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Upload - FER API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="text"],
+        input[type="file"],
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .test-section {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #eee;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-left: 4px solid #4CAF50;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 13px;
+            display: none;
+        }
+        #result.error {
+            border-left-color: #f44336;
+            background: #ffebee;
+        }
+        .preview {
+            margin-top: 10px;
+            max-width: 300px;
+        }
+        .preview img {
+            max-width: 100%;
+            border-radius: 4px;
+            border: 2px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Upload - FER API</h1>
+        
+        <!-- Test 1: Upload simple d'image -->
+        <div class="test-section">
+            <h2>Test 1: Upload simple d'image</h2>
+            <form id="uploadForm">
+                <div class="form-group">
+                    <label>Clé Admin (X-ADMIN-KEY):</label>
+                    <input type="text" id="apiKey" placeholder="Entrez votre clé API admin" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Préfixe (optionnel):</label>
+                    <input type="text" id="prefix" placeholder="ex: candidate, event, img" value="test">
+                </div>
+                
+                <div class="form-group">
+                    <label>Image:</label>
+                    <input type="file" id="image" accept="image/*" required>
+                    <div id="imagePreview" class="preview"></div>
+                </div>
+                
+                <button type="submit">📤 Upload Image</button>
+            </form>
+        </div>
+
+        <!-- Test 2: Créer un candidat avec photo -->
+        <div class="test-section">
+            <h2>Test 2: Créer un candidat avec photo</h2>
+            <form id="candidateForm">
+                <div class="form-group">
+                    <label>Clé Admin (X-ADMIN-KEY):</label>
+                    <input type="text" id="apiKey2" placeholder="Entrez votre clé API admin" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Nom du candidat:</label>
+                    <input type="text" id="candidateName" placeholder="ex: Jean Dupont" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Bio:</label>
+                    <textarea id="candidateBio" placeholder="Biographie du candidat..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>Catégorie ID (optionnel):</label>
+                    <input type="text" id="categoryId" placeholder="ex: 1, 2, 3...">
+                </div>
+                
+                <div class="form-group">
+                    <label>Photo du candidat:</label>
+                    <input type="file" id="candidateImage" accept="image/*" required>
+                    <div id="candidatePreview" class="preview"></div>
+                </div>
+                
+                <button type="submit">➕ Créer Candidat</button>
+            </form>
+        </div>
+
+        <!-- Résultat -->
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost/api'; // Modifiez selon votre configuration
+        
+        // Preview image
+        document.getElementById('image').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('imagePreview').innerHTML = 
+                        `<img src="${e.target.result}" alt="Preview">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        document.getElementById('candidateImage').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('candidatePreview').innerHTML = 
+                        `<img src="${e.target.result}" alt="Preview">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Test 1: Upload simple
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const apiKey = document.getElementById('apiKey').value;
+            const prefix = document.getElementById('prefix').value;
+            const image = document.getElementById('image').files[0];
+            
+            const formData = new FormData();
+            formData.append('image', image);
+            if (prefix) formData.append('prefix', prefix);
+            
+            showResult('🔄 Upload en cours...', false);
+            
+            try {
+                const response = await fetch(`${API_URL}/upload`, {
+                    method: 'POST',
+                    headers: {
+                        'X-ADMIN-KEY': apiKey
+                    },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult(`✅ Upload réussi!\n\n${JSON.stringify(data, null, 2)}\n\nURL de l'image: ${data.url}`, false);
+                } else {
+                    showResult(`❌ Erreur: ${data.error}\n\n${JSON.stringify(data, null, 2)}`, true);
+                }
+            } catch (error) {
+                showResult(`❌ Erreur: ${error.message}`, true);
+            }
+        });
+
+        // Test 2: Créer candidat
+        document.getElementById('candidateForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const apiKey = document.getElementById('apiKey2').value;
+            const name = document.getElementById('candidateName').value;
+            const bio = document.getElementById('candidateBio').value;
+            const categoryId = document.getElementById('categoryId').value;
+            const image = document.getElementById('candidateImage').files[0];
+            
+            const formData = new FormData();
+            formData.append('name', name);
+            if (bio) formData.append('bio', bio);
+            if (categoryId) formData.append('category_id', categoryId);
+            formData.append('image', image);
+            
+            showResult('🔄 Création du candidat en cours...', false);
+            
+            try {
+                const response = await fetch(`${API_URL}/candidate`, {
+                    method: 'POST',
+                    headers: {
+                        'X-ADMIN-KEY': apiKey
+                    },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult(`✅ Candidat créé avec succès!\n\nID: ${data.id}\nImage URL: ${data.image_url}\n\n${JSON.stringify(data, null, 2)}`, false);
+                } else {
+                    showResult(`❌ Erreur: ${data.error}\n\n${JSON.stringify(data, null, 2)}`, true);
+                }
+            } catch (error) {
+                showResult(`❌ Erreur: ${error.message}`, true);
+            }
+        });
+
+        function showResult(message, isError) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = message;
+            resultDiv.style.display = 'block';
+            resultDiv.className = isError ? 'error' : '';
+            resultDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>

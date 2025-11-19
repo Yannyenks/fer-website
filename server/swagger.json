@@ -1,0 +1,566 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "FER Website API",
+    "description": "API pour gestion événements, candidats Miss/Master, votes et partage",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8000/api",
+      "description": "Serveur local"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "AdminKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-ADMIN-KEY"
+      }
+    },
+    "schemas": {
+      "Event": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "integer"},
+          "name": {"type": "string"},
+          "start_date": {"type": "string", "format": "date-time"},
+          "end_date": {"type": "string", "format": "date-time"},
+          "cover_image": {"type": "string"},
+          "description": {"type": "string"},
+          "category_id": {"type": "integer"}
+        }
+      },
+      "Candidate": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "integer"},
+          "name": {"type": "string"},
+          "category_id": {"type": "integer"},
+          "bio": {"type": "string"},
+          "image": {"type": "string"},
+          "votes": {"type": "integer"},
+          "extra": {"type": "object"}
+        }
+      },
+      "Category": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "integer"},
+          "name": {"type": "string"},
+          "image": {"type": "string"}
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {"type": "string"}
+        }
+      }
+    }
+  },
+  "paths": {
+    "/admin/register": {
+      "post": {
+        "summary": "Enregistrer un nouvel admin",
+        "tags": ["Admin"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["username", "password"],
+                "properties": {
+                  "username": {"type": "string"},
+                  "password": {"type": "string", "minLength": 6},
+                  "email": {"type": "string", "format": "email"}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Admin créé avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {"type": "boolean"},
+                    "id": {"type": "integer"},
+                    "api_key": {"type": "string", "description": "Clé API pour authentification (X-ADMIN-KEY)"}
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Données invalides"
+          },
+          "409": {
+            "description": "Nom d'utilisateur déjà existant"
+          }
+        }
+      }
+    },
+    "/admin/login": {
+      "post": {
+        "summary": "Connexion admin",
+        "tags": ["Admin"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": {"type": "string"},
+                  "password": {"type": "string"}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authentification réussie",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {"type": "boolean"},
+                    "admin": {
+                      "type": "object",
+                      "properties": {
+                        "id": {"type": "integer"},
+                        "username": {"type": "string"},
+                        "email": {"type": "string"},
+                        "api_key": {"type": "string", "description": "Clé API pour authentification (X-ADMIN-KEY)"}
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Données manquantes"
+          },
+          "401": {
+            "description": "Identifiants incorrects"
+          }
+        }
+      }
+    },
+    "/events": {
+      "get": {
+        "summary": "Liste tous les événements",
+        "tags": ["Events"],
+        "responses": {
+          "200": {
+            "description": "Liste des événements",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "events": {
+                      "type": "array",
+                      "items": {"$ref": "#/components/schemas/Event"}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Créer un événement (admin)",
+        "tags": ["Events"],
+        "security": [{"AdminKey": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/Event"}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Événement créé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {"type": "integer"}
+                  }
+                }
+              }
+            }
+          },
+          "401": {"description": "Non autorisé"}
+        }
+      }
+    },
+    "/event/{id}": {
+      "get": {
+        "summary": "Obtenir un événement par ID",
+        "tags": ["Events"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "integer"}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Détails de l'événement",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "event": {"$ref": "#/components/schemas/Event"}
+                  }
+                }
+              }
+            }
+          },
+          "404": {"description": "Événement non trouvé"}
+        }
+      },
+      "put": {
+        "summary": "Mettre à jour un événement (admin)",
+        "tags": ["Events"],
+        "security": [{"AdminKey": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "integer"}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/Event"}
+            }
+          }
+        },
+        "responses": {
+          "200": {"description": "Événement mis à jour"},
+          "401": {"description": "Non autorisé"},
+          "404": {"description": "Événement non trouvé"}
+        }
+      },
+      "delete": {
+        "summary": "Supprimer un événement (admin)",
+        "tags": ["Events"],
+        "security": [{"AdminKey": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "integer"}
+          }
+        ],
+        "responses": {
+          "200": {"description": "Événement supprimé"},
+          "401": {"description": "Non autorisé"}
+        }
+      }
+    },
+    "/categories": {
+      "get": {
+        "summary": "Liste toutes les catégories",
+        "tags": ["Categories"],
+        "responses": {
+          "200": {
+            "description": "Liste des catégories",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "categories": {
+                      "type": "array",
+                      "items": {"$ref": "#/components/schemas/Category"}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/candidates": {
+      "get": {
+        "summary": "Liste tous les candidats",
+        "tags": ["Candidates"],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {"type": "string"},
+            "description": "Recherche par nom"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Liste des candidats",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "candidates": {
+                      "type": "array",
+                      "items": {"$ref": "#/components/schemas/Candidate"}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/candidate": {
+      "post": {
+        "summary": "Créer un candidat (admin)",
+        "tags": ["Candidates"],
+        "security": [{"AdminKey": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/Candidate"}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Candidat créé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {"type": "integer"}
+                  }
+                }
+              }
+            }
+          },
+          "401": {"description": "Non autorisé"}
+        }
+      }
+    },
+    "/candidate/{id}": {
+      "get": {
+        "summary": "Obtenir un candidat par ID",
+        "tags": ["Candidates"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "integer"}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Détails du candidat",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "candidate": {"$ref": "#/components/schemas/Candidate"}
+                  }
+                }
+              }
+            }
+          },
+          "404": {"description": "Candidat non trouvé"}
+        }
+      },
+      "put": {
+        "summary": "Mettre à jour un candidat (admin)",
+        "tags": ["Candidates"],
+        "security": [{"AdminKey": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "integer"}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/Candidate"}
+            }
+          }
+        },
+        "responses": {
+          "200": {"description": "Candidat mis à jour"},
+          "401": {"description": "Non autorisé"},
+          "404": {"description": "Candidat non trouvé"}
+        }
+      },
+      "delete": {
+        "summary": "Supprimer un candidat (admin)",
+        "tags": ["Candidates"],
+        "security": [{"AdminKey": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "integer"}
+          }
+        ],
+        "responses": {
+          "200": {"description": "Candidat supprimé"},
+          "401": {"description": "Non autorisé"}
+        }
+      }
+    },
+    "/vote": {
+      "post": {
+        "summary": "Voter pour un candidat (public)",
+        "tags": ["Votes"],
+        "description": "Un vote par personne (cookie + IP). Pas besoin de compte.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "candidate_id": {"type": "integer"}
+                },
+                "required": ["candidate_id"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Vote enregistré",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {"type": "boolean"}
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Déjà voté",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {"type": "boolean"},
+                    "error": {"type": "string", "example": "already_voted"}
+                  }
+                }
+              }
+            }
+          },
+          "400": {"description": "candidate_id manquant"}
+        }
+      }
+    },
+    "/share/create": {
+      "post": {
+        "summary": "Créer un lien de partage (admin)",
+        "tags": ["Share"],
+        "security": [{"AdminKey": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "candidate_id": {"type": "integer"}
+                },
+                "required": ["candidate_id"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token créé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "token": {"type": "string"},
+                    "url": {"type": "string"}
+                  }
+                }
+              }
+            }
+          },
+          "401": {"description": "Non autorisé"}
+        }
+      }
+    },
+    "/share/{token}": {
+      "get": {
+        "summary": "Résoudre un lien de partage",
+        "tags": ["Share"],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Candidat résolu",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "candidate": {"$ref": "#/components/schemas/Candidate"}
+                  }
+                }
+              }
+            }
+          },
+          "404": {"description": "Token non trouvé"}
+        }
+      }
+    }
+  }
+}

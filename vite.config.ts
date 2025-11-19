@@ -9,6 +9,16 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 3000,
       host: '0.0.0.0',
+      open: true,
+      proxy: {
+        // proxy API requests to the PHP backend
+        '/api': {
+          target: 'http://localhost:8000',
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path.replace(/^\/api/, '/api')
+        }
+      },
     },
     plugins: [
       react(),
