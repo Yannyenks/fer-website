@@ -6,23 +6,30 @@ import { useToast } from '../../components/ToastProvider';
 
 const CandidateProfile = () => {
   const { slug } = useParams();
-  const candidate = getCandidateBySlug(slug || '');
-
-  if (!candidate) return <p className="text-white p-10">Profil introuvable.</p>;
-
+  const [candidate, setCandidate] = useState<any | null>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
   const [votes, setVotes] = useState(candidate.votes || 0);
   const [voted, setVoted] = useState(false);
 
   useEffect(() => {
-    if (!user) { setVoted(false); return; }
+    let mounted = true;
+    (async () => {
+      const c = await getCandidateBySlug(slug || '');
+      if (mounted) setCandidate(c || null);
+    })();
+    return () => { mounted = false; };
+  }, [slug]);
+
+  useEffect(() => {
+    if (!user || !candidate) { setVoted(false); return; }
     setVoted(!!localStorage.getItem(`vote_${user.id}_${candidate.id}`));
-  }, [user, candidate.id]);
+  }, [user, candidate]);
 
   const toast = useToast();
 
   const handleVote = () => {
+    if (!candidate) return;
     if (!user) return navigate(`/login?redirect=/concours/candidate/${candidate.slug}`);
     const participantKey = `fer_participant_${user.id}`;
     if (!localStorage.getItem(participantKey)) {
@@ -33,11 +40,15 @@ const CandidateProfile = () => {
     const key = `vote_${user.id}_${candidate.id}`;
     if (localStorage.getItem(key)) { toast.show('Vous avez déjà voté pour ce candidat.', 'info'); return; }
     localStorage.setItem(key, '1');
-    const updated = updateCandidate(candidate.id, { votes: (candidate.votes || 0) + 1 });
-    setVotes(updated?.votes ?? (votes + 1));
-    setVoted(true);
-    toast.show('Merci pour votre vote !', 'success');
+    (async () => {
+      const updated = await updateCandidate(candidate.id, { votes: (candidate.votes || 0) + 1 });
+      setVotes(updated?.votes ?? (votes + 1));
+      setVoted(true);
+      toast.show('Merci pour votre vote !', 'success');
+    })();
   };
+
+  if (!candidate) return <p className="text-white p-10">Profil introuvable.</p>;
 
   return (
     <div className="min-h-screen bg-[#0c0c0c] text-white p-10">

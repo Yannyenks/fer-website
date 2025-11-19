@@ -1,12 +1,21 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import CandidateCard from "../components/CandidateCard";
 import { getAllCandidates } from "../services/candidateService";
 import { useNavigate } from "react-router-dom";
+import { Candidate } from "../types";
 
 const CandidatesPage: React.FC = () => {
   const navigate = useNavigate();
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
 
-  const candidates = getAllCandidates();
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const list = await getAllCandidates();
+      if (mounted) setCandidates(list);
+    })();
+    return () => { mounted = false; };
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#0c0c0c] text-white px-6 py-16">

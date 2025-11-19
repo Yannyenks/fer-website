@@ -12,7 +12,7 @@ const CandidatesAdmin: React.FC = () => {
 
   useEffect(() => {
     // initial load
-    refresh();
+    (async () => { setList(await getAllCandidates()); })();
     // listen for storage changes from other tabs
     const onStorage = (e: StorageEvent) => {
       if (e.key === 'fer_candidates_v1') refresh();
@@ -40,26 +40,28 @@ const CandidatesAdmin: React.FC = () => {
     if (existing && existing.id !== editingId) return setMessage({ type: 'error', text: 'Le slug existe déjà. Choisissez-en un autre.' });
 
     if (editingId) {
-      const updated = updateCandidate(editingId, { ...form });
+      const updated = await updateCandidate(editingId, { ...form });
       if (!updated) return setMessage({ type: 'error', text: 'Erreur lors de la mise à jour' });
       setEditingId(null);
       setForm({ name: '', slug: '', age: 20, origin: '', domain: '', bio: '', photo: '' });
-      refresh();
+      setList(await getAllCandidates());
       setMessage({ type: 'success', text: 'Candidat mis à jour.' });
       return;
     }
 
-    addCandidate({ ...form, votes: 0, gallery: [] });
+    await addCandidate({ ...form, votes: 0, gallery: [] });
     setForm({ name: '', slug: '', age: 20, origin: '', domain: '', bio: '', photo: '' });
-    refresh();
+    setList(await getAllCandidates());
     setMessage({ type: 'success', text: 'Candidat ajouté.' });
   };
 
   const handleDelete = (id: number) => {
     if (!confirm('Supprimer ce candidat ?')) return;
-    deleteCandidate(id);
-    refresh();
-    setMessage({ type: 'success', text: 'Candidat supprimé.' });
+    (async () => {
+      await deleteCandidate(id);
+      setList(await getAllCandidates());
+      setMessage({ type: 'success', text: 'Candidat supprimé.' });
+    })();
   };
 
   const handleEdit = (c: Candidate) => {

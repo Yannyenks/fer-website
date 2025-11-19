@@ -25,12 +25,13 @@ const CandidateCard: React.FC<Props> = ({ candidate, onClick }) => {
 
   useEffect(() => {
     let mounted = true;
+    // Always use asset manifest for candidate photo
     (async () => {
-      const resolved = await resolveCandidateImage({ photo: candidate.photo, slug: candidate.slug, name: candidate.name });
+      const resolved = await resolveCandidateImage({ slug: candidate.slug, name: candidate.name });
       if (mounted) setSrc(resolved);
     })();
     return () => { mounted = false; };
-  }, [candidate.photo, candidate.slug, candidate.name]);
+  }, [candidate.slug, candidate.name]);
 
   const toast = useToast();
 
@@ -55,9 +56,11 @@ const CandidateCard: React.FC<Props> = ({ candidate, onClick }) => {
     if (localStorage.getItem(key)) return;
     localStorage.setItem(key, '1');
     setVoted(true);
-    // Persist vote count
-    const updated = updateCandidate(candidate.id, { votes: (candidate.votes || 0) + 1 });
-    setVotes(updated?.votes ?? (votes + 1));
+    // Persist vote count via API
+    (async () => {
+      const updated = await updateCandidate(candidate.id, { votes: (candidate.votes || 0) + 1 });
+      setVotes(updated?.votes ?? (votes + 1));
+    })();
   };
 
   const handleShare = (e: React.MouseEvent) => {

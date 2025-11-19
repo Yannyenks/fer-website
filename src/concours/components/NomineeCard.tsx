@@ -50,7 +50,12 @@ const NomineeCard: React.FC<Props> = ({ award }) => {
                 src={encodeURI(n.photo)}
                 alt={n.name}
                 className="w-16 h-16 object-cover rounded-md border"
-                onClick={() => openPreview(n.id, n.name, n.photo)}
+                onClick={async () => {
+                  // Always resolve from asset manifest
+                  const { resolveCandidateImage } = await import('../../components/assetResolver');
+                  const asset = await resolveCandidateImage({ slug: n.slug, name: n.name });
+                  openPreview(n.id, n.name, asset);
+                }}
                 style={{ cursor: 'pointer' }}
               />
               <div className="flex-1">

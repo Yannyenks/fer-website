@@ -123,11 +123,7 @@ const FERHeroImage: React.FC = () => {
 
   useEffect(() => {
     let mounted = true;
-    const override = getSectionImage('fer-hero');
-    if (override) {
-      if (mounted) setSrc(override);
-      return () => { mounted = false; };
-    }
+    // Always use project asset only
     findProjectAsset('fer-hero').then(asset => {
       if (mounted && asset) setSrc(asset);
     });

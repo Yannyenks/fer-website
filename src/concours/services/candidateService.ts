@@ -1,59 +1,74 @@
 import { Candidate } from "../types";
-import { mockCandidates } from "../data/mock";
+import api from '../../services/api';
 
-const STORAGE_KEY = 'fer_candidates_v1';
+// Candidate service using backend API. Falls back to localStorage when API unavailable.
+const STORAGE_KEY = 'fer_candidates_v1_fallback';
 
-function seedIfEmpty() {
+async function fallbackSeed() {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(mockCandidates));
+    // keep empty if not present; frontend mock may still work
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
   }
 }
 
-export function getAllCandidates(): Candidate[] {
-  seedIfEmpty();
+export async function getAllCandidates(): Promise<Candidate[]> {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]') as Candidate[];
+    const res = await api.get('/public/candidates');
+    return res.data as Candidate[];
   } catch (e) {
-    return [];
+    await fallbackSeed();
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]') as Candidate[]; } catch { return []; }
   }
 }
 
-export function getCandidateBySlug(slug: string): Candidate | undefined {
-  return getAllCandidates().find(c => c.slug === slug);
+export async function getCandidateBySlug(slug: string): Promise<Candidate | undefined> {
+  try {
+    const list = await getAllCandidates();
+    return list.find(c => c.slug === slug);
+  } catch (e) {
+    const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]') as Candidate[];
+    return list.find(c => c.slug === slug);
+  }
 }
 
-export function addCandidate(payload: Omit<Candidate, 'id'|'votes'> & Partial<Pick<Candidate,'votes'>>): Candidate {
-  const list = getAllCandidates();
-  const nextId = list.length ? Math.max(...list.map(c => c.id)) + 1 : 1;
-  const candidate: Candidate = {
-    id: nextId,
-    slug: payload.slug,
-    name: payload.name,
-    age: payload.age,
-    origin: payload.origin,
-    domain: payload.domain,
-    bio: payload.bio,
-    photo: payload.photo,
-    gallery: payload.gallery || [],
-    votes: payload.votes ?? 0,
-  };
-  list.push(candidate);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-  return candidate;
+export async function addCandidate(payload: Omit<Candidate, 'id'|'votes'> & Partial<Pick<Candidate,'votes'>>): Promise<Candidate | null> {
+  try {
+    const res = await api.post('/candidates', payload);
+    return res.data as Candidate;
+  } catch (e) {
+    // fallback to local
+    const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]') as Candidate[];
+    const nextId = list.length ? Math.max(...list.map(c => c.id)) + 1 : 1;
+    const candidate: Candidate = { id: nextId, votes: payload.votes ?? 0, gallery: payload.gallery || [], ...(payload as any) } as Candidate;
+    list.push(candidate);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    return candidate;
+  }
 }
 
-export function updateCandidate(id: number, changes: Partial<Candidate>): Candidate | undefined {
-  const list = getAllCandidates();
-  const idx = list.findIndex(c => c.id === id);
-  if (idx === -1) return undefined;
-  const updated = { ...list[idx], ...changes };
-  list[idx] = updated;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-  return updated;
+export async function updateCandidate(id: number, changes: Partial<Candidate>): Promise<Candidate | null> {
+  try {
+    const res = await api.put(`/candidates/${id}`, changes);
+    return res.data as Candidate;
+  } catch (e) {
+    const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]') as Candidate[];
+    const idx = list.findIndex(c => c.id === id);
+    if (idx === -1) return null;
+    list[idx] = { ...list[idx], ...changes };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    return list[idx];
+  }
 }
 
-export function deleteCandidate(id: number) {
-  const list = getAllCandidates().filter(c => c.id !== id);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+export async function deleteCandidate(id: number): Promise<boolean> {
+  try {
+    await api.delete(`/candidates/${id}`);
+    return true;
+  } catch (e) {
+    const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]') as Candidate[];
+    const newList = list.filter(c => c.id !== id);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(newList));
+    return true;
+  }
 }
