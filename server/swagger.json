@@ -341,26 +341,104 @@
     },
     "/candidate": {
       "post": {
-        "summary": "Créer un candidat (admin)",
+        "summary": "Créer un candidat avec ou sans upload d'image (admin)",
         "tags": ["Candidates"],
         "security": [{"AdminKey": []}],
+        "description": "⚠️ IMPORTANT: Cette route accepte 2 formats différents:\n\n1️⃣ **JSON** (Content-Type: application/json): Le champ 'image' doit être une URL HTTP complète d'une image déjà uploadée. Si vous avez un fichier local, uploadez-le d'abord via /api/upload.\n\n2️⃣ **Multipart** (Content-Type: multipart/form-data): Upload direct du fichier image. Dans curl, utilisez -F 'image=@/chemin/fichier.jpg' (notez le @).",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {"$ref": "#/components/schemas/Candidate"}
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {"type": "string", "description": "Nom du candidat", "example": "Jean Dupont"},
+                  "bio": {"type": "string", "description": "Biographie du candidat", "example": "Étudiant en informatique passionné par le développement web"},
+                  "image": {
+                    "type": "string", 
+                    "format": "uri",
+                    "description": "⚠️ URL HTTP complète de l'image (PAS un chemin de fichier local, PAS de @). Exemple: http://localhost:8000/storage/xxx.jpg - Pour uploader un fichier local, utilisez d'abord /api/upload ou utilisez multipart/form-data", 
+                    "example": "http://localhost:8000/storage/candidate_abc123_1677123456.jpg"
+                  },
+                  "category_id": {"type": "integer", "description": "ID de la catégorie", "example": 1},
+                  "extra": {"type": "object", "description": "Données supplémentaires au format JSON", "example": {"instagram": "@username", "age": 22}}
+                },
+                "required": ["name"]
+              },
+              "examples": {
+                "avec_url_image": {
+                  "summary": "✅ Créer avec URL d'image (fichier déjà uploadé)",
+                  "description": "Utilisez cette méthode si vous avez déjà uploadé l'image via /api/upload. Le champ 'image' doit être une URL HTTP, PAS un chemin de fichier local.",
+                  "value": {
+                    "name": "Marie Dupont",
+                    "bio": "Étudiante en médecine",
+                    "image": "http://localhost:8000/storage/candidate_abc123_1677123456.jpg",
+                    "category_id": 1,
+                    "extra": {"instagram": "@marie_dupont"}
+                  }
+                },
+                "exemple_incorrect": {
+                  "summary": "❌ INCORRECT - Ne faites PAS ceci",
+                  "description": "Ceci ne fonctionnera PAS: vous ne pouvez pas utiliser un chemin de fichier local ou @ dans le format JSON",
+                  "value": {
+                    "name": "Marie Dupont",
+                    "bio": "Étudiante",
+                    "image": "@C:/Users/Admin/Pictures/photo.jpg",
+                    "category_id": 1
+                  }
+                }
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {"type": "string", "description": "Nom du candidat", "example": "Jean Dupont"},
+                  "bio": {"type": "string", "description": "Biographie du candidat", "example": "Étudiant en informatique"},
+                  "image": {
+                    "type": "string", 
+                    "format": "binary", 
+                    "description": "Fichier image à uploader (JPEG, PNG, GIF, WebP - max 10MB). Utilisez @ devant le chemin du fichier dans curl"
+                  },
+                  "category_id": {"type": "integer", "description": "ID de la catégorie", "example": 1},
+                  "extra": {"type": "string", "description": "JSON string de données supplémentaires", "example": "{\"instagram\":\"@username\",\"age\":22}"}
+                },
+                "required": ["name", "image"]
+              },
+              "examples": {
+                "upload_direct": {
+                  "summary": "Créer un candidat avec upload d'image (curl)",
+                  "description": "Exemple avec curl - notez le @ devant le chemin du fichier",
+                  "value": "curl -X POST 'http://localhost:8000/api/candidate' -H 'X-ADMIN-KEY: votre_cle' -F 'name=Jean Dupont' -F 'bio=Étudiant' -F 'category_id=1' -F 'image=@/chemin/vers/photo.jpg'"
+                }
+              }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Candidat créé",
+            "description": "Candidat créé avec succès",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "id": {"type": "integer"}
+                    "id": {"type": "integer", "description": "ID du candidat créé"},
+                    "image_url": {"type": "string", "description": "URL complète de l'image uploadée"}
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Erreur de validation ou d'upload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {"type": "string"},
+                    "message": {"type": "string"}
                   }
                 }
               }
@@ -559,6 +637,98 @@
             }
           },
           "404": {"description": "Token non trouvé"}
+        }
+      }
+    },
+    "/upload": {
+      "post": {
+        "summary": "Upload une image (admin)",
+        "tags": ["Upload"],
+        "security": [{"AdminKey": []}],
+        "description": "Upload une image dans le dossier storage/ et retourne l'URL complète",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "image": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Fichier image (JPEG, PNG, GIF, WebP, max 10MB)"
+                  },
+                  "prefix": {
+                    "type": "string",
+                    "description": "Préfixe pour le nom du fichier (défaut: 'img')",
+                    "default": "img"
+                  }
+                },
+                "required": ["image"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Image uploadée avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {"type": "boolean", "example": true},
+                    "url": {"type": "string", "description": "URL complète de l'image", "example": "http://localhost:8000/storage/candidate_abc123_1677123456.jpg"},
+                    "path": {"type": "string", "description": "Chemin relatif", "example": "/storage/candidate_abc123_1677123456.jpg"},
+                    "filename": {"type": "string", "description": "Nom du fichier", "example": "candidate_abc123_1677123456.jpg"}
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Erreur de validation ou d'upload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {"type": "string", "example": "Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed"}
+                  }
+                }
+              }
+            }
+          },
+          "401": {"description": "Non autorisé"}
+        }
+      }
+    },
+    "/storage/{filename}": {
+      "get": {
+        "summary": "Accéder à une image uploadée",
+        "tags": ["Upload"],
+        "description": "Sert les images du dossier storage/ avec cache d'1 an",
+        "parameters": [
+          {
+            "name": "filename",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "Nom du fichier image",
+            "example": "candidate_abc123_1677123456.jpg"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Image retournée",
+            "content": {
+              "image/jpeg": {},
+              "image/png": {},
+              "image/gif": {},
+              "image/webp": {}
+            }
+          },
+          "404": {"description": "Image non trouvée"}
         }
       }
     }

@@ -24,7 +24,7 @@ function Test-SimpleUpload {
     }
     
     $uri = "$API_URL/upload"
-    
+     
     # Créer le form data
     $form = @{
         image = Get-Item -Path $imagePath

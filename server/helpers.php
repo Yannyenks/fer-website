@@ -4,11 +4,26 @@ require_once __DIR__ . '/db.php';
 
 function send_cors() {
     $origin = env('FRONTEND_URL', '*');
+    
+    // Get the actual origin from the request
+    $requestOrigin = $_SERVER['HTTP_ORIGIN'] ?? null;
+    
     if ($origin === '*') {
         header('Access-Control-Allow-Origin: *');
+    } elseif ($requestOrigin === 'null' || $requestOrigin === null) {
+        // Allow file:// protocol (origin is 'null')
+        header('Access-Control-Allow-Origin: *');
     } else {
-        header('Access-Control-Allow-Origin: ' . $origin);
+        // Check if the request origin matches the configured origin
+        $allowedOrigins = explode(',', $origin);
+        if (in_array($requestOrigin, $allowedOrigins)) {
+            header('Access-Control-Allow-Origin: ' . $requestOrigin);
+        } else {
+            // Fallback to configured origin
+            header('Access-Control-Allow-Origin: ' . $origin);
+        }
     }
+    
     header('Access-Control-Allow-Credentials: true');
     header('Access-Control-Allow-Headers: Content-Type, X-ADMIN-KEY');
     header('Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE');
