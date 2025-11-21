@@ -4,6 +4,36 @@ import api from '../../services/api';
 // Candidate service using backend API. Falls back to localStorage when API unavailable.
 const STORAGE_KEY = 'fer_candidates_v1_fallback';
 
+// Helper to normalize image URLs to use the correct backend server
+function normalizeImageUrl(imageUrl: string | null): string {
+  if (!imageUrl) return '';
+  
+  // If it's already a data URL, return as is
+  if (imageUrl.startsWith('data:')) return imageUrl;
+  
+  // If it's a relative path starting with /storage/, prepend the API base URL
+  if (imageUrl.startsWith('/storage/')) {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const baseUrl = apiUrl.replace('/api', ''); // Remove /api suffix
+    return baseUrl + imageUrl;
+  }
+  
+  // If it's already a full URL pointing to a different host, check if it needs fixing
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+    // Extract the path part if it contains /storage/
+    const match = imageUrl.match(/\/storage\/.+$/);
+    if (match) {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const baseUrl = apiUrl.replace('/api', '');
+      return baseUrl + match[0];
+    }
+    return imageUrl;
+  }
+  
+  // Otherwise return as is
+  return imageUrl;
+}
+
 async function fallbackSeed() {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) {
@@ -15,8 +45,34 @@ async function fallbackSeed() {
 export async function getAllCandidates(): Promise<Candidate[]> {
   try {
     const res = await api.get('/candidates');
-    return res.data.candidates as Candidate[];
+    const candidates = res.data.candidates || [];
+    
+    // Transform backend data to frontend format
+    return candidates.map((c: any) => {
+      let extra: any = {};
+      if (c.extra) {
+        try {
+          extra = typeof c.extra === 'string' ? JSON.parse(c.extra) : c.extra;
+        } catch (e) {
+          console.error('Error parsing extra:', e);
+        }
+      }
+      
+      return {
+        id: c.id,
+        name: c.name,
+        slug: extra.slug || `candidate-${c.id}`,
+        age: extra.age || 20,
+        origin: extra.origin || '',
+        domain: extra.domain || '',
+        bio: c.bio || '',
+        photo: normalizeImageUrl(c.image),
+        votes: c.votes || 0,
+        gallery: extra.gallery || []
+      } as Candidate;
+    });
   } catch (e) {
+    console.error('Get all candidates error:', e);
     await fallbackSeed();
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]') as Candidate[]; } catch { return []; }
   }
@@ -34,16 +90,39 @@ export async function getCandidateBySlug(slug: string): Promise<Candidate | unde
 
 export async function addCandidate(payload: Omit<Candidate, 'id'|'votes'> & Partial<Pick<Candidate,'votes'>>): Promise<Candidate | null> {
   try {
-    const res = await api.post('/candidate', payload);
+    // Prepare data for backend
+    const backendPayload = {
+      name: payload.name,
+      bio: payload.bio || '',
+      image: payload.photo || '',
+      category_id: 1, // Default category
+      extra: JSON.stringify({
+        slug: payload.slug,
+        age: payload.age,
+        origin: payload.origin,
+        domain: payload.domain,
+        gallery: payload.gallery || []
+      })
+    };
+    
+    const res = await api.post('/candidate', backendPayload);
+    
     // PHP backend returns {id: number, image_url?: string}
     const newCandidate: Candidate = {
-      ...payload as any,
       id: res.data.id,
+      name: payload.name,
+      slug: payload.slug,
+      age: payload.age,
+      origin: payload.origin,
+      domain: payload.domain,
+      bio: payload.bio || '',
+      photo: normalizeImageUrl(res.data.image_url || payload.photo),
       votes: payload.votes ?? 0,
       gallery: payload.gallery || []
     };
     return newCandidate;
   } catch (e) {
+    console.error('Add candidate error:', e);
     // fallback to local
     const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]') as Candidate[];
     const nextId = list.length ? Math.max(...list.map(c => c.id)) + 1 : 1;
@@ -56,11 +135,67 @@ export async function addCandidate(payload: Omit<Candidate, 'id'|'votes'> & Part
 
 export async function updateCandidate(id: number, changes: Partial<Candidate>): Promise<Candidate | null> {
   try {
-    await api.put(`/candidate/${id}`, changes);
-    // Get updated candidate
-    const res = await api.get(`/candidate/${id}`);
-    return res.data.candidate as Candidate;
+    // First get current candidate to preserve all data
+    const currentRes = await api.get(`/candidate/${id}`);
+    const current = currentRes.data.candidate;
+    
+    // Parse current extra data
+    let currentExtra: any = {};
+    if (current.extra) {
+      try {
+        currentExtra = typeof current.extra === 'string' ? JSON.parse(current.extra) : current.extra;
+      } catch (e) {
+        console.error('Error parsing current extra:', e);
+      }
+    }
+    
+    // Prepare data for backend - merge with existing data
+    const backendPayload: any = {};
+    
+    if (changes.name !== undefined) backendPayload.name = changes.name;
+    if (changes.bio !== undefined) backendPayload.bio = changes.bio;
+    if (changes.photo !== undefined) backendPayload.image = changes.photo;
+    
+    // Merge extra fields (preserve existing values if not provided in changes)
+    const updatedExtra = {
+      slug: changes.slug !== undefined ? changes.slug : currentExtra.slug,
+      age: changes.age !== undefined ? changes.age : currentExtra.age,
+      origin: changes.origin !== undefined ? changes.origin : currentExtra.origin,
+      domain: changes.domain !== undefined ? changes.domain : currentExtra.domain,
+      gallery: changes.gallery !== undefined ? changes.gallery : (currentExtra.gallery || [])
+    };
+    
+    backendPayload.extra = updatedExtra;
+    
+    const updateRes = await api.put(`/candidate/${id}`, backendPayload);
+    
+    // The backend now returns the updated candidate
+    const updatedCandidate = updateRes.data.candidate;
+    
+    // Parse extra data
+    let extra: any = {};
+    if (updatedCandidate.extra) {
+      try {
+        extra = typeof updatedCandidate.extra === 'string' ? JSON.parse(updatedCandidate.extra) : updatedCandidate.extra;
+      } catch (e) {
+        console.error('Error parsing extra:', e);
+      }
+    }
+    
+    return {
+      id: updatedCandidate.id,
+      name: updatedCandidate.name,
+      slug: extra.slug || '',
+      age: extra.age || 20,
+      origin: extra.origin || '',
+      domain: extra.domain || '',
+      bio: updatedCandidate.bio || '',
+      photo: normalizeImageUrl(updatedCandidate.image),
+      votes: updatedCandidate.votes || 0,
+      gallery: extra.gallery || []
+    } as Candidate;
   } catch (e) {
+    console.error('Update candidate error:', e);
     const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]') as Candidate[];
     const idx = list.findIndex(c => c.id === id);
     if (idx === -1) return null;

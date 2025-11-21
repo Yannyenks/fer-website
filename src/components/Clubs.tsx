@@ -3,6 +3,8 @@ import React, { useEffect, useState } from 'react';
 import Section, { SectionTitle } from './Section';
 import { getSectionImage } from './sectionImageService';
 import { findProjectAsset } from './assetLoader';
+import App from '../App';
+import AppImage from './AppImage';
 
 const ClubTag: React.FC<{ children: React.ReactNode, delay?: string }> = ({ children, delay='0ms' }) => (
     <span className="inline-block bg-white text-gray-700 font-semibold px-4 py-2 rounded-full shadow-md transform hover:scale-110 hover:bg-custom-green hover:text-white transition-all duration-300" style={{ transitionDelay: delay }}>
@@ -37,7 +39,7 @@ const Clubs: React.FC = () => {
 export default Clubs;
 
 function useClubsImage() {
-  const [src, setSrc] = useState<string>(getSectionImage('clubs') || 'https://picsum.photos/800/600?random=3');
+  const [src, setSrc] = useState<string>(getSectionImage('clubs') || AppImage.GALLERY.IMAGE_7);
   useEffect(() => {
     let mounted = true;
     const override = getSectionImage('clubs');

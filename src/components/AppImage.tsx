@@ -21,6 +21,10 @@ abstract class AppImage {
     IMAGE_12: '/assets/images/image 12.jpeg',
     IMAGE_13: '/assets/images/image 13.jpeg',
     IMAGE_14: '/assets/images/image 14.jpeg',
+    IMAGE_15: '/assets/images/image 15.jpg',
+    IMAGE_16: '/assets/images/image 16.jpg',
+    IMAGE_17: '/assets/images/image 17.jpg',
+    IMAGE_18: '/assets/images/image 18.jpg',
     LOGO: '/assets/logo/logo.png',
   } as const;
 

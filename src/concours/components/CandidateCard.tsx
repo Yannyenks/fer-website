@@ -2,9 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Candidate } from "../types";
 import { useAuth } from '../../components/AuthProvider';
 import { useToast } from '../../components/ToastProvider';
-import { updateCandidate } from '../services/candidateService';
-import { useNavigate } from 'react-router-dom';
-import { resolveCandidateImage } from '../../components/assetResolver';
+import api from '../../services/api';
 
 interface Props {
   candidate: Candidate;
@@ -15,23 +13,13 @@ const CandidateCard: React.FC<Props> = ({ candidate, onClick }) => {
   const { user } = useAuth();
   const [voted, setVoted] = useState(false);
   const [votes, setVotes] = useState(candidate.votes || 0);
-  const [src, setSrc] = useState<string>(candidate.photo);
 
   useEffect(() => {
     if (!user) { setVoted(false); return; }
-    const key = `vote_${user.id}_${candidate.id}`;
-    setVoted(!!localStorage.getItem(key));
+    // Check if user has voted for ANY candidate (global vote check)
+    const hasVoted = !!localStorage.getItem(`user_has_voted_${user.id}`);
+    setVoted(hasVoted);
   }, [user, candidate.id]);
-
-  useEffect(() => {
-    let mounted = true;
-    // Always use asset manifest for candidate photo
-    (async () => {
-      const resolved = await resolveCandidateImage({ slug: candidate.slug, name: candidate.name });
-      if (mounted) setSrc(resolved);
-    })();
-    return () => { mounted = false; };
-  }, [candidate.slug, candidate.name]);
 
   const toast = useToast();
 
@@ -52,14 +40,37 @@ const CandidateCard: React.FC<Props> = ({ candidate, onClick }) => {
       }
       return;
     }
-    const key = `vote_${user.id}_${candidate.id}`;
-    if (localStorage.getItem(key)) return;
-    localStorage.setItem(key, '1');
-    setVoted(true);
-    // Persist vote count via API
+    const globalVoteKey = `user_has_voted_${user.id}`;
+    if (localStorage.getItem(globalVoteKey)) {
+      toast.show('Vous avez déjà voté. Un seul vote par personne est autorisé.', 'info');
+      return;
+    }
+    
+    // Vote via API backend
     (async () => {
-      const updated = await updateCandidate(candidate.id, { votes: (candidate.votes || 0) + 1 });
-      setVotes(updated?.votes ?? (votes + 1));
+      try {
+        const response = await api.post('/vote', { candidate_id: candidate.id });
+        if (response.data.ok) {
+          localStorage.setItem(globalVoteKey, candidate.id.toString());
+          setVoted(true);
+          setVotes(votes + 1);
+          toast.show('Vote enregistré !', 'success');
+        }
+      } catch (error: any) {
+        if (error.response?.status === 409) {
+          const votedFor = error.response?.data?.voted_for;
+          if (votedFor) {
+            toast.show('Vous avez déjà voté pour un autre candidat', 'error');
+            localStorage.setItem(globalVoteKey, votedFor.toString());
+          } else {
+            toast.show('Vous avez déjà voté', 'error');
+            localStorage.setItem(globalVoteKey, '1');
+          }
+          setVoted(true);
+        } else {
+          toast.show('Erreur lors du vote', 'error');
+        }
+      }
     })();
   };
 
@@ -84,7 +95,7 @@ const CandidateCard: React.FC<Props> = ({ candidate, onClick }) => {
       }}
     >
       <img
-        src={src}
+        src={candidate.photo}
         alt={candidate.name}
         className="w-full h-80 object-cover"
       />
@@ -94,7 +105,7 @@ const CandidateCard: React.FC<Props> = ({ candidate, onClick }) => {
         <p className="text-gray-400">{candidate.domain} • {candidate.origin}</p>
 
         <div className="mt-4 flex items-center justify-between">
-          <p className="text-[#d4af37] font-bold">Votes : {votes}</p>
+          <p className="text-[#d4af37] font-bold">{votes || 0} vote{votes !== 1 ? 's' : ''}</p>
           <div className="flex gap-2">
             <button onClick={handleVote} disabled={voted} className={`px-3 py-2 rounded ${voted ? 'bg-gray-500 text-white':'bg-yellow-600 text-white'}`}>
               {voted ? 'Voté' : 'Voter'}

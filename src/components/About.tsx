@@ -4,6 +4,7 @@ import { getSectionImage } from './sectionImageService';
 import { findProjectAsset } from './assetLoader';
 import Section, { SectionTitle } from './Section';
 import { HeartLogo } from './icons/HeartLogo';
+import AppImage from './AppImage';
 
 const InfoBlock: React.FC<{ title: string; children: React.ReactNode; imageSrc: string; reverse?: boolean; sectionId?: string }> = ({ title, children, imageSrc, reverse = false, sectionId }) => {
   const [src, setSrc] = useState<string>(imageSrc);
@@ -55,10 +56,10 @@ const About: React.FC = () => {
       </div>
 
       <div className="space-y-20">
-        <InfoBlock title="OBJECTIF GLOBAL" imageSrc="https://picsum.photos/800/600?random=1" sectionId="about-1">
+        <InfoBlock title="OBJECTIF GLOBAL" imageSrc={AppImage.GALLERY.IMAGE_5} sectionId="about-1">
           Promouvoir le bien-être des jeunes au sein du Centre, identifier et mettre en place des actions adaptées pour accompagner leur réussite.
         </InfoBlock>
-        <InfoBlock title="NOTRE MISSION" imageSrc="https://picsum.photos/800/600?random=2" reverse sectionId="about-2">
+        <InfoBlock title="NOTRE MISSION" imageSrc={AppImage.GALLERY.IMAGE_6} reverse sectionId="about-2">
           Créer un environnement sain et dynamique pour les jeunes, leur permettant de s'épanouir et de devenir des acteurs de leur propre vie.
         </InfoBlock>
       </div>

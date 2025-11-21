@@ -63,12 +63,26 @@ if (preg_match('#^/storage/(.+)$#', $path, $m) && $method === 'GET') {
     
     if (!file_exists($filePath)) {
         http_response_code(404);
-        echo "Image not found";
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'Image not found', 'path' => $filePath]);
         exit;
     }
     
     // Determine content type
     $mimeType = mime_content_type($filePath);
+    if (!$mimeType) {
+        // Fallback based on extension
+        $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+        $mimeTypes = [
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'gif' => 'image/gif',
+            'webp' => 'image/webp'
+        ];
+        $mimeType = $mimeTypes[$ext] ?? 'application/octet-stream';
+    }
+    
     header('Content-Type: ' . $mimeType);
     header('Content-Length: ' . filesize($filePath));
     header('Cache-Control: public, max-age=31536000'); // Cache for 1 year
@@ -273,11 +287,11 @@ if ($route === 'vote' && $method === 'POST') {
     $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
     $ip_hash = hash_ip($ip);
 
-    // Prevent duplicate votes by same visitor or IP for same candidate
-    $stmt = $pdo->prepare('SELECT id FROM votes WHERE candidate_id = ? AND (visitor_id = ? OR ip_hash = ?) LIMIT 1');
-    $stmt->execute([$candidate_id, $visitor, $ip_hash]);
+    // Prevent duplicate votes: one vote per visitor/IP TOTAL (not per candidate)
+    $stmt = $pdo->prepare('SELECT id, candidate_id FROM votes WHERE visitor_id = ? OR ip_hash = ? LIMIT 1');
+    $stmt->execute([$visitor, $ip_hash]);
     $found = $stmt->fetch();
-    if ($found) json_response(['ok' => false, 'error' => 'already_voted'], 409);
+    if ($found) json_response(['ok' => false, 'error' => 'already_voted', 'voted_for' => $found['candidate_id']], 409);
 
     try {
         $pdo->beginTransaction();
@@ -292,6 +306,51 @@ if ($route === 'vote' && $method === 'POST') {
     }
 
     json_response(['ok' => true]);
+}
+
+// Get voting statistics (admin)
+if ($route === 'votes/stats' && $method === 'GET') {
+    require_admin();
+    
+    // Get total votes
+    $stmt = $pdo->query('SELECT COUNT(*) as total FROM votes');
+    $totalVotes = $stmt->fetch()['total'];
+    
+    // Get candidates with vote counts
+    $stmt = $pdo->query('SELECT c.id, c.name, c.votes, COUNT(v.id) as actual_votes 
+                         FROM candidates c 
+                         LEFT JOIN votes v ON c.id = v.candidate_id 
+                         GROUP BY c.id 
+                         ORDER BY c.votes DESC');
+    $candidates = $stmt->fetchAll();
+    
+    json_response([
+        'total_votes' => $totalVotes,
+        'candidates' => $candidates
+    ]);
+}
+
+// Sync vote counts (admin only - use to fix inconsistencies)
+if ($route === 'votes/sync' && $method === 'POST') {
+    require_admin();
+    
+    try {
+        $pdo->beginTransaction();
+        
+        // Update all candidates' vote counts based on votes table
+        $stmt = $pdo->query('UPDATE candidates c 
+                            SET votes = (
+                              SELECT COUNT(*) 
+                              FROM votes v 
+                              WHERE v.candidate_id = c.id
+                            )');
+        
+        $pdo->commit();
+        json_response(['ok' => true, 'message' => 'Vote counts synchronized']);
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        json_response(['error' => 'sync_failed', 'message' => $e->getMessage()], 500);
+    }
 }
 
 // Create share token (admin)
@@ -375,24 +434,49 @@ if (preg_match('#^candidate/(\d+)$#', $route, $m) && $method === 'PUT') {
     require_admin();
     $id = (int)$m[1];
     $data = get_raw_input();
+    
+    // First, get current candidate data to merge with updates
+    $stmt = $pdo->prepare('SELECT * FROM candidates WHERE id = ? LIMIT 1');
+    $stmt->execute([$id]);
+    $current = $stmt->fetch();
+    if (!$current) json_response(['error' => 'candidate not found'], 404);
+    
+    // Parse current extra data
+    $currentExtra = [];
+    if ($current['extra']) {
+        $currentExtra = json_decode($current['extra'], true) ?? [];
+    }
+    
+    // Merge extra data if provided
+    if (array_key_exists('extra', $data)) {
+        $newExtra = is_string($data['extra']) ? json_decode($data['extra'], true) : $data['extra'];
+        $currentExtra = array_merge($currentExtra, $newExtra ?? []);
+    }
+    
     $fields = [];
     $params = [];
-    foreach (['name','category_id','bio','image','votes'] as $f) {
+    foreach (['name','category_id','bio','image'] as $f) {
         if (array_key_exists($f, $data)) {
             $fields[] = "$f = ?";
             $params[] = $data[$f];
         }
     }
-    if (array_key_exists('extra', $data)) {
-        $fields[] = "extra = ?";
-        $params[] = json_encode($data['extra']);
-    }
+    
+    // Always update extra with merged data
+    $fields[] = "extra = ?";
+    $params[] = json_encode($currentExtra);
+    
     if (empty($fields)) json_response(['ok' => false, 'error' => 'no_fields'], 400);
     $params[] = $id;
     $sql = 'UPDATE candidates SET ' . implode(', ', $fields) . ' WHERE id = ?';
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
-    json_response(['ok' => true]);
+    
+    // Return updated candidate
+    $stmt = $pdo->prepare('SELECT * FROM candidates WHERE id = ? LIMIT 1');
+    $stmt->execute([$id]);
+    $updated = $stmt->fetch();
+    json_response(['ok' => true, 'candidate' => $updated]);
 }
 
 // Delete candidate (admin)
@@ -423,20 +507,41 @@ if ($route === 'user/register' && $method === 'POST') {
         json_response(['error' => 'invalid email format'], 400);
     }
     
-    // For MVP, we'll just return success (no database storage for regular users)
-    // In production, you'd want to store users in a separate 'users' table
-    $user_id = 'user_' . time() . '_' . mt_rand(1000, 9999);
+    // Check if username already exists
+    $stmt = $pdo->prepare('SELECT id FROM users WHERE username = ? LIMIT 1');
+    $stmt->execute([$username]);
+    if ($stmt->fetch()) {
+        json_response(['error' => 'username already exists'], 409);
+    }
     
-    json_response([
-        'ok' => true, 
-        'user' => [
-            'id' => $user_id,
-            'username' => $username,
-            'email' => $email,
-            'role' => 'user',
-            'created_at' => date('Y-m-d H:i:s')
-        ]
-    ]);
+    // Check if email already exists
+    $stmt = $pdo->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
+    $stmt->execute([$email]);
+    if ($stmt->fetch()) {
+        json_response(['error' => 'email already exists'], 409);
+    }
+    
+    // Hash password and insert user
+    $hashed = password_hash($password, PASSWORD_BCRYPT);
+    try {
+        $stmt = $pdo->prepare('INSERT INTO users (username, email, password, role, created_at) VALUES (?, ?, ?, ?, NOW())');
+        $stmt->execute([$username, $email, $hashed, 'user']);
+        
+        $userId = $pdo->lastInsertId();
+        
+        json_response([
+            'ok' => true, 
+            'user' => [
+                'id' => $userId,
+                'username' => $username,
+                'email' => $email,
+                'role' => 'user',
+                'created_at' => date('Y-m-d H:i:s')
+            ]
+        ]);
+    } catch (PDOException $e) {
+        json_response(['error' => 'Database error', 'message' => $e->getMessage()], 500);
+    }
 }
 
 // User login endpoint
@@ -449,16 +554,26 @@ if ($route === 'user/login' && $method === 'POST') {
         json_response(['error' => 'username and password required'], 400);
     }
     
-    // For MVP, accept any non-empty credentials for regular users
-    // In production, validate against users table
-    $user_id = 'user_' . time() . '_' . mt_rand(1000, 9999);
+    // Fetch user from database
+    $stmt = $pdo->prepare('SELECT * FROM users WHERE username = ? LIMIT 1');
+    $stmt->execute([$username]);
+    $user = $stmt->fetch();
+    
+    if (!$user || !password_verify($password, $user['password'])) {
+        json_response(['ok' => false, 'error' => 'invalid credentials'], 401);
+    }
+    
+    // Update last login
+    $stmt = $pdo->prepare('UPDATE users SET last_login = NOW() WHERE id = ?');
+    $stmt->execute([$user['id']]);
     
     json_response([
         'ok' => true,
         'user' => [
-            'id' => $user_id,
-            'username' => $username,
-            'role' => 'user',
+            'id' => $user['id'],
+            'username' => $user['username'],
+            'email' => $user['email'],
+            'role' => $user['role'],
             'login_at' => date('Y-m-d H:i:s')
         ]
     ]);

@@ -4,6 +4,7 @@ require_once __DIR__ . '/env.php';
 function db_connect(): PDO {
     static $pdo = null;
     if ($pdo !== null) return $pdo;
+    
     $host = env('DB_HOST', '127.0.0.1');
     $port = env('DB_PORT', '3306');
     $name = env('DB_NAME', 'jvepi');
@@ -31,9 +32,21 @@ function db_connect(): PDO {
                 $pdo = new PDO($dsn, $user, $pass, $options);
                 return $pdo;
             } catch (PDOException $e2) {
+                // In production, don't expose connection details
+                if (is_production()) {
+                    http_response_code(503);
+                    die(json_encode(['error' => 'Service temporarily unavailable']));
+                }
                 throw $e2;
             }
         }
+        
+        // In production, hide detailed error messages
+        if (is_production()) {
+            http_response_code(503);
+            die(json_encode(['error' => 'Database connection failed']));
+        }
+        
         throw $e;
     }
 }

@@ -33,6 +33,7 @@ import MissMasterHome from './concours/pages/MissMasterHome';
 import Inscription from './pages/Inscription';
 import CandidatesAdmin from './pages/admin/CandidatesAdmin';
 import SectionImagesAdmin from './pages/admin/SectionImagesAdmin';
+import VotesAdmin from './pages/admin/VotesAdmin';
 import ActionsIndex from './pages/actions/ActionsIndex';
 import ActionDetail from './pages/actions/ActionDetail';
 
@@ -97,6 +98,7 @@ const App: React.FC = () => {
         <Route path="/admin/*" element={<AdminDashboard />} />
         <Route path="/admin/candidates" element={<ProtectedRoute requiredRole="admin"><CandidatesAdmin /></ProtectedRoute>} />
         <Route path="/admin/section-images" element={<ProtectedRoute requiredRole="admin"><SectionImagesAdmin /></ProtectedRoute>} />
+        <Route path="/admin/votes" element={<ProtectedRoute requiredRole="admin"><VotesAdmin /></ProtectedRoute>} />
 
         {/* === PAGES DU CONCOURS === */}
         <Route path="/concours" element={<MissMasterHome />} />

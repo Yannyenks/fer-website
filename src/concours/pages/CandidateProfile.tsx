@@ -1,29 +1,35 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getCandidateBySlug, updateCandidate } from "../services/candidateService";
+import { getCandidateBySlug } from "../services/candidateService";
 import { useAuth } from '../../components/AuthProvider';
 import { useToast } from '../../components/ToastProvider';
+import api from '../../services/api';
 
 const CandidateProfile = () => {
   const { slug } = useParams();
   const [candidate, setCandidate] = useState<any | null>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [votes, setVotes] = useState(candidate.votes || 0);
+  const [votes, setVotes] = useState(0);
   const [voted, setVoted] = useState(false);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       const c = await getCandidateBySlug(slug || '');
-      if (mounted) setCandidate(c || null);
+      if (mounted && c) {
+        setCandidate(c);
+        setVotes(c.votes || 0);
+      }
     })();
     return () => { mounted = false; };
   }, [slug]);
 
   useEffect(() => {
     if (!user || !candidate) { setVoted(false); return; }
-    setVoted(!!localStorage.getItem(`vote_${user.id}_${candidate.id}`));
+    // Check if user has voted for ANY candidate
+    const hasVoted = !!localStorage.getItem(`user_has_voted_${user.id}`);
+    setVoted(hasVoted);
   }, [user, candidate]);
 
   const toast = useToast();
@@ -37,50 +43,109 @@ const CandidateProfile = () => {
       if (go) return navigate(`/inscription?redirect=/concours/candidate/${candidate.slug}`);
       return;
     }
-    const key = `vote_${user.id}_${candidate.id}`;
-    if (localStorage.getItem(key)) { toast.show('Vous avez déjà voté pour ce candidat.', 'info'); return; }
-    localStorage.setItem(key, '1');
+    const globalVoteKey = `user_has_voted_${user.id}`;
+    if (localStorage.getItem(globalVoteKey)) { 
+      toast.show('Vous avez déjà voté. Un seul vote par personne est autorisé.', 'info'); 
+      return; 
+    }
+    
     (async () => {
-      const updated = await updateCandidate(candidate.id, { votes: (candidate.votes || 0) + 1 });
-      setVotes(updated?.votes ?? (votes + 1));
-      setVoted(true);
-      toast.show('Merci pour votre vote !', 'success');
+      try {
+        const response = await api.post('/vote', { candidate_id: candidate.id });
+        if (response.data.ok) {
+          localStorage.setItem(globalVoteKey, candidate.id.toString());
+          setVotes(votes + 1);
+          setVoted(true);
+          toast.show('Merci pour votre vote !', 'success');
+        }
+      } catch (error: any) {
+        if (error.response?.status === 409) {
+          const votedFor = error.response?.data?.voted_for;
+          if (votedFor) {
+            toast.show(`Vous avez déjà voté pour un autre candidat`, 'error');
+            localStorage.setItem(globalVoteKey, votedFor.toString());
+          } else {
+            toast.show('Vous avez déjà voté', 'error');
+            localStorage.setItem(globalVoteKey, '1');
+          }
+          setVoted(true);
+        } else {
+          toast.show('Erreur lors du vote', 'error');
+        }
+      }
     })();
   };
 
   if (!candidate) return <p className="text-white p-10">Profil introuvable.</p>;
 
   return (
-    <div className="min-h-screen bg-[#0c0c0c] text-white p-10">
+    <div className="min-h-screen bg-[#0c0c0c] text-white py-16 px-6">
+      <div className="max-w-6xl mx-auto">
+        
+        <div className="flex flex-col md:flex-row gap-10 items-start">
+          
+          {/* Photo du candidat avec forme fixe */}
+          <div className="w-full md:w-[420px] flex-shrink-0">
+            <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-[#d4af37]">
+              <div className="aspect-[3/4] bg-gray-900">
+                <img
+                  src={candidate.photo}
+                  alt={candidate.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </div>
+            
+            {/* Statistiques de votes */}
+            <div className="mt-6 bg-gradient-to-r from-[#1a1a1a] to-[#0c0c0c] p-6 rounded-xl border border-[#d4af37]/30">
+              <div className="text-center">
+                <div className="text-5xl font-bold text-[#d4af37] mb-2">{votes || 0}</div>
+                <div className="text-gray-400 text-sm uppercase tracking-wider">Vote{votes !== 1 ? 's' : ''}</div>
+              </div>
+            </div>
+          </div>
 
-      <div className="flex flex-col md:flex-row gap-14">
+          {/* Informations du candidat */}
+          <div className="flex-1 flex flex-col gap-6">
+            <div>
+              <h1 className="text-5xl font-bold mb-3" style={{ color: "#d4af37" }}>
+                {candidate.name}
+              </h1>
+              <div className="flex flex-wrap gap-4 text-lg">
+                <span className="px-4 py-2 bg-[#1a1a1a] rounded-lg border border-[#d4af37]/20">
+                  {candidate.domain}
+                </span>
+                <span className="px-4 py-2 bg-[#1a1a1a] rounded-lg border border-[#d4af37]/20">
+                  📍 {candidate.origin}
+                </span>
+              </div>
+            </div>
 
-        <img
-          src={candidate.photo}
-          className="rounded-xl shadow-2xl w-full md:w-[400px]"
-        />
+            <div className="bg-[#1a1a1a] p-6 rounded-xl border border-[#d4af37]/20">
+              <h2 className="text-xl font-semibold text-[#d4af37] mb-3">Biographie</h2>
+              <p className="text-gray-300 leading-relaxed text-lg">
+                {candidate.bio}
+              </p>
+            </div>
 
-        <div className="flex flex-col gap-4">
-          <h1 className="text-4xl font-bold" style={{ color: "#d4af37" }}>
-            {candidate.name}
-          </h1>
-
-          <p className="text-gray-300">{candidate.domain}</p>
-          <p className="text-gray-300">Origine : {candidate.origin}</p>
-
-          <p className="text-gray-400 leading-relaxed mt-4">
-            {candidate.bio}
-          </p>
-
-          <div className="mt-6 flex items-center gap-4">
-            <div className="text-[#d4af37] font-bold">Votes : {votes}</div>
-            <button onClick={handleVote} disabled={voted} className={`px-6 py-3 rounded-full text-black font-bold ${voted ? 'bg-gray-600':'bg-yellow-500'}`} style={{background: voted ? undefined : 'linear-gradient(90deg,#b68d2e,#e4c766)'}}>
-              {voted ? 'Voté' : 'Voter Maintenant'}
-            </button>
+            {/* Bouton de vote */}
+            <div className="mt-4">
+              <button 
+                onClick={handleVote} 
+                disabled={voted} 
+                className={`w-full md:w-auto px-10 py-4 rounded-full text-lg font-bold transition-all duration-300 transform hover:scale-105 ${voted ? 'bg-gray-700 text-gray-400 cursor-not-allowed' : 'text-black shadow-xl hover:shadow-2xl'}`} 
+                style={{background: voted ? undefined : 'linear-gradient(90deg,#b68d2e,#e4c766)'}}
+              >
+                {voted ? '✓ Vous avez voté' : '⭐ Voter pour ce candidat'}
+              </button>
+              {voted && (
+                <p className="text-sm text-gray-500 mt-3">Vous ne pouvez voter qu'une seule fois pour un seul candidat.</p>
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
+      </div>
     </div>
   );
 };

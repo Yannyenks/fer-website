@@ -52,6 +52,7 @@ const AdminControls: React.FC = () => {
           <div className="mt-2 space-x-2">
             <a className="px-4 py-2 bg-blue-600 text-white rounded" href="/admin/candidates">Gérer les candidats</a>
             <a className="px-4 py-2 bg-green-700 text-white rounded ml-3" href="/admin/section-images">Gérer images sections</a>
+            <a className="px-4 py-2 bg-purple-600 text-white rounded ml-3" href="/admin/votes">Statistiques des votes</a>
           </div>
         </div>
         <div>

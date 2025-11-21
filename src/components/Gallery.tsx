@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import Section, { SectionTitle } from './Section';
 import { getSectionImage } from './sectionImageService';
 import { findProjectAsset } from './assetLoader';
+import AppImage from './AppImage';
 
 const GalleryImage: React.FC<{ src: string; alt: string; className?: string; }> = ({ src, alt, className = '' }) => (
   <div className={`overflow-hidden rounded-2xl shadow-lg ${className}`}>
@@ -19,16 +20,16 @@ const Gallery: React.FC = () => {
     <Section>
       <SectionTitle>QUELQUES PHOTOS</SectionTitle>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <GalleryImage src={useGalleryImage()} alt="Gallery image 1" className="md:col-span-2 md:row-span-2" />
-        <GalleryImage src="https://picsum.photos/500/500?random=11" alt="Gallery image 2" />
-        <GalleryImage src="https://picsum.photos/500/500?random=12" alt="Gallery image 3" />
-        <GalleryImage src="https://picsum.photos/500/500?random=13" alt="Gallery image 4" />
-        <GalleryImage src="https://picsum.photos/500/500?random=14" alt="Gallery image 5" />
-        <GalleryImage src="https://picsum.photos/500/800?random=15" alt="Gallery image 6" className="md:col-span-2 md:row-span-2" />
-        <GalleryImage src="https://picsum.photos/500/500?random=16" alt="Gallery image 7" />
-        <GalleryImage src="https://picsum.photos/500/500?random=17" alt="Gallery image 8" />
+        <GalleryImage src={AppImage.GALLERY.IMAGE_2} alt="Gallery image 1" className="md:col-span-2 md:row-span-2" />
+        <GalleryImage src={AppImage.GALLERY.IMAGE_8} alt="https://picsum.photos/500/500?random=11" />
+        <GalleryImage src={AppImage.GALLERY.IMAGE_9} alt="https://picsum.photos/500/500?random=12" />
+        <GalleryImage src={AppImage.GALLERY.IMAGE_10} alt="https://picsum.photos/500/500?random=13" />
+        <GalleryImage src={AppImage.GALLERY.IMAGE_11} alt="https://picsum.photos/500/500?random=14" />
+        <GalleryImage src={AppImage.GALLERY.IMAGE_12} alt="https://picsum.photos/500/800?random=15" className="md:col-span-2 md:row-span-2" />
+        <GalleryImage src={AppImage.GALLERY.IMAGE_13} alt="https://picsum.photos/500/500?random=16" />
+        <GalleryImage src={AppImage.GALLERY.IMAGE_14} alt="https://picsum.photos/500/500?random=17" />
       </div>
-    </Section>
+    </Section>  
   );
 };
 
