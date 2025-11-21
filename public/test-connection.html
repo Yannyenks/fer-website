@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Frontend-Backend Connection</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .info { background-color: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+        button { padding: 10px 20px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Test Connexion Frontend-Backend</h1>
+    
+    <div id="results"></div>
+    
+    <button onclick="testConnection()">🧪 Lancer les tests</button>
+    <button onclick="clearResults()">🗑️ Vider</button>
+
+    <script>
+        const API_BASE = 'http://localhost:8000/api';
+        
+        function addResult(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `test ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong> - ${message}`;
+            document.getElementById('results').appendChild(div);
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+        
+        async function testAPI(endpoint, method = 'GET', body = null, headers = {}) {
+            try {
+                const options = {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...headers
+                    }
+                };
+                
+                if (body) {
+                    options.body = JSON.stringify(body);
+                }
+                
+                const response = await fetch(`${API_BASE}${endpoint}`, options);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    return { success: true, data, status: response.status };
+                } else {
+                    return { success: false, error: data, status: response.status };
+                }
+            } catch (error) {
+                return { success: false, error: error.message, status: 0 };
+            }
+        }
+        
+        async function testConnection() {
+            clearResults();
+            addResult('🚀 Début des tests de connexion...', 'info');
+            
+            // Test 1: Backend accessibility
+            addResult('Test 1: Vérification accessibilité backend...', 'info');
+            try {
+                const response = await fetch('http://localhost:8000');
+                if (response.ok) {
+                    addResult('✅ Backend PHP accessible', 'success');
+                } else {
+                    addResult('❌ Backend PHP non accessible', 'error');
+                    return;
+                }
+            } catch (e) {
+                addResult('❌ Impossible de contacter le backend: ' + e.message, 'error');
+                return;
+            }
+            
+            // Test 2: API Candidates
+            addResult('Test 2: Test API candidats...', 'info');
+            const candidatesTest = await testAPI('/candidates');
+            if (candidatesTest.success) {
+                const count = candidatesTest.data.candidates ? candidatesTest.data.candidates.length : 0;
+                addResult(`✅ API Candidats OK - ${count} candidat(s) trouvé(s)`, 'success');
+            } else {
+                addResult(`❌ API Candidats échoué: ${candidatesTest.error}`, 'error');
+            }
+            
+            // Test 3: API Categories  
+            addResult('Test 3: Test API catégories...', 'info');
+            const categoriesTest = await testAPI('/categories');
+            if (categoriesTest.success) {
+                const count = categoriesTest.data.categories ? categoriesTest.data.categories.length : 0;
+                addResult(`✅ API Catégories OK - ${count} catégorie(s)`, 'success');
+            } else {
+                addResult(`❌ API Catégories échoué: ${categoriesTest.error}`, 'error');
+            }
+            
+            // Test 4: API Events
+            addResult('Test 4: Test API événements...', 'info');
+            const eventsTest = await testAPI('/events');
+            if (eventsTest.success) {
+                const count = eventsTest.data.events ? eventsTest.data.events.length : 0;
+                addResult(`✅ API Événements OK - ${count} événement(s)`, 'success');
+            } else {
+                addResult(`❌ API Événements échoué: ${eventsTest.error}`, 'error');
+            }
+            
+            // Test 5: Test authentification
+            addResult('Test 5: Test création compte admin...', 'info');
+            const adminData = {
+                username: 'testuser_' + Date.now(),
+                password: 'testpass123'
+            };
+            
+            const registerTest = await testAPI('/admin/register', 'POST', adminData);
+            if (registerTest.success && registerTest.data.api_key) {
+                addResult(`✅ Création admin OK - API Key: ${registerTest.data.api_key.substring(0, 10)}...`, 'success');
+                
+                // Test 6: Login avec les identifiants
+                addResult('Test 6: Test connexion admin...', 'info');
+                const loginTest = await testAPI('/admin/login', 'POST', adminData);
+                if (loginTest.success) {
+                    addResult('✅ Connexion admin OK', 'success');
+                    
+                    // Test 7: Endpoint protégé
+                    addResult('Test 7: Test endpoint protégé (création candidat)...', 'info');
+                    const candidateData = {
+                        name: 'Candidat Test ' + Date.now(),
+                        bio: 'Candidat de test pour vérifier la connexion',
+                        category_id: 1
+                    };
+                    
+                    const createTest = await testAPI('/candidate', 'POST', candidateData, {
+                        'X-ADMIN-KEY': registerTest.data.api_key
+                    });
+                    
+                    if (createTest.success) {
+                        addResult(`✅ Création candidat OK - ID: ${createTest.data.id}`, 'success');
+                    } else {
+                        addResult(`❌ Création candidat échoué: ${createTest.error}`, 'error');
+                    }
+                } else {
+                    addResult(`❌ Connexion admin échoué: ${loginTest.error}`, 'error');
+                }
+            } else {
+                addResult(`❌ Création admin échoué: ${registerTest.error}`, 'error');
+            }
+            
+            // Test 8: Vote public
+            addResult('Test 8: Test vote public...', 'info');
+            const voteTest = await testAPI('/vote', 'POST', { candidate_id: 1 });
+            if (voteTest.success) {
+                addResult('✅ Vote public OK', 'success');
+            } else if (voteTest.status === 409) {
+                addResult('✅ Vote public OK (déjà voté)', 'success');
+            } else {
+                addResult(`❌ Vote public échoué: ${voteTest.error}`, 'error');
+            }
+            
+            addResult('🎉 Tests terminés !', 'info');
+        }
+    </script>
+</body>
+</html>

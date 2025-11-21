@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Système d'Authentification Complet</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px;
+            border-radius: 8px;
+            color: white;
+            z-index: 1000;
+            transition: opacity 0.3s;
+        }
+        .toast.success { background-color: #10b981; }
+        .toast.error { background-color: #ef4444; }
+        .toast.info { background-color: #3b82f6; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto p-6">
+        <div class="max-w-4xl mx-auto">
+            <h1 class="text-4xl font-bold text-center mb-8 text-gray-800">
+                🔐 Test Authentification JVEPI Centre
+            </h1>
+
+            <!-- Status Display -->
+            <div id="status-display" class="mb-8 p-6 bg-white rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold mb-4">📊 Statut Actuel</h2>
+                <div id="user-status" class="text-gray-600">Non connecté</div>
+            </div>
+
+            <!-- Actions Grid -->
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- Inscription -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-lg font-semibold mb-4 text-blue-600">👤 Inscription Utilisateur</h3>
+                    <div class="space-y-3">
+                        <input type="text" id="reg-username" placeholder="Nom d'utilisateur" 
+                               class="w-full p-3 border border-gray-300 rounded-lg">
+                        <input type="email" id="reg-email" placeholder="Email" 
+                               class="w-full p-3 border border-gray-300 rounded-lg">
+                        <input type="password" id="reg-password" placeholder="Mot de passe" 
+                               class="w-full p-3 border border-gray-300 rounded-lg">
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" id="reg-admin" class="rounded">
+                            <label for="reg-admin" class="text-sm text-gray-600">Compte administrateur</label>
+                        </div>
+                        <button onclick="testRegister()" 
+                                class="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 transition">
+                            ✨ S'inscrire
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Connexion -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-lg font-semibold mb-4 text-green-600">🔑 Connexion</h3>
+                    <div class="space-y-3">
+                        <input type="text" id="login-username" placeholder="Nom d'utilisateur" 
+                               class="w-full p-3 border border-gray-300 rounded-lg">
+                        <input type="password" id="login-password" placeholder="Mot de passe" 
+                               class="w-full p-3 border border-gray-300 rounded-lg">
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" id="login-admin" class="rounded">
+                            <label for="login-admin" class="text-sm text-gray-600">Connexion administrateur</label>
+                        </div>
+                        <button onclick="testLogin()" 
+                                class="w-full bg-green-600 text-white p-3 rounded-lg hover:bg-green-700 transition">
+                            🔐 Se connecter
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Inscription FER -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-lg font-semibold mb-4 text-purple-600">🎯 Inscription FER 2025</h3>
+                    <div class="space-y-3">
+                        <input type="text" id="fer-name" placeholder="Nom complet" 
+                               class="w-full p-3 border border-gray-300 rounded-lg">
+                        <input type="email" id="fer-email" placeholder="Email" 
+                               class="w-full p-3 border border-gray-300 rounded-lg">
+                        <select id="fer-type" class="w-full p-3 border border-gray-300 rounded-lg">
+                            <option value="">Type de participation</option>
+                            <option value="participant">Participant</option>
+                            <option value="candidate">Candidat(e)</option>
+                        </select>
+                        <select id="fer-category" class="w-full p-3 border border-gray-300 rounded-lg" style="display: none;">
+                            <option value="">Choisir une catégorie</option>
+                            <option value="miss">Miss FER 2025</option>
+                            <option value="master">Master FER 2025</option>
+                        </select>
+                        <button onclick="testFERRegistration()" 
+                                class="w-full bg-purple-600 text-white p-3 rounded-lg hover:bg-purple-700 transition">
+                            🌟 S'inscrire FER 2025
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Actions Admin -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-lg font-semibold mb-4 text-red-600">⚙️ Actions Admin</h3>
+                    <div class="space-y-3">
+                        <button onclick="testAdminCandidates()" 
+                                class="w-full bg-red-600 text-white p-3 rounded-lg hover:bg-red-700 transition">
+                            👥 Liste des Candidats
+                        </button>
+                        <button onclick="testLogout()" 
+                                class="w-full bg-gray-600 text-white p-3 rounded-lg hover:bg-gray-700 transition">
+                            🚪 Déconnexion
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comptes de test -->
+            <div class="mt-8 p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <h3 class="text-lg font-semibold mb-3 text-yellow-800">🧪 Comptes de Test</h3>
+                <div class="grid md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <strong>Admin:</strong><br>
+                        Utilisateur: admin<br>
+                        Mot de passe: admin123
+                    </div>
+                    <div>
+                        <strong>Utilisateur:</strong><br>
+                        Utilisateur: test_user<br>
+                        Mot de passe: test123
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logs -->
+            <div class="mt-8 bg-white p-6 rounded-lg shadow-md">
+                <h3 class="text-lg font-semibold mb-4 text-gray-800">📝 Logs d'Activité</h3>
+                <div id="logs" class="bg-gray-50 p-4 rounded-lg h-40 overflow-y-auto text-sm font-mono"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000/api';
+        
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => document.body.removeChild(toast), 300);
+            }, 3000);
+            
+            log(`[${type.toUpperCase()}] ${message}`);
+        }
+        
+        function log(message) {
+            const logs = document.getElementById('logs');
+            const time = new Date().toLocaleTimeString();
+            logs.innerHTML += `[${time}] ${message}\\n`;
+            logs.scrollTop = logs.scrollHeight;
+        }
+        
+        function updateStatus() {
+            const user = JSON.parse(localStorage.getItem('user') || 'null');
+            const statusDiv = document.getElementById('user-status');
+            
+            if (user) {
+                statusDiv.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <div class="w-3 h-3 rounded-full ${user.role === 'admin' ? 'bg-red-500' : 'bg-green-500'}"></div>
+                        <span class="font-medium">${user.name}</span>
+                        <span class="text-sm text-gray-500">(${user.role === 'admin' ? 'Administrateur' : 'Utilisateur'})</span>
+                    </div>
+                `;
+            } else {
+                statusDiv.innerHTML = '<span class="text-gray-500">Non connecté</span>';
+            }
+        }
+        
+        async function testRegister() {
+            const username = document.getElementById('reg-username').value;
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-password').value;
+            const isAdmin = document.getElementById('reg-admin').checked;
+            
+            if (!username || !email || !password) {
+                showToast('Tous les champs sont requis', 'error');
+                return;
+            }
+            
+            const endpoint = isAdmin ? '/admin/register' : '/user/register';
+            
+            try {
+                const response = await fetch(`${API_BASE}${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showToast(`Inscription ${isAdmin ? 'admin' : 'utilisateur'} réussie !`, 'success');
+                    // Clear form
+                    document.getElementById('reg-username').value = '';
+                    document.getElementById('reg-email').value = '';
+                    document.getElementById('reg-password').value = '';
+                    document.getElementById('reg-admin').checked = false;
+                } else {
+                    showToast(data.message || 'Erreur lors de l\\'inscription', 'error');
+                }
+            } catch (error) {
+                showToast('Erreur de connexion au serveur', 'error');
+                log(`Erreur: ${error.message}`);
+            }
+        }
+        
+        async function testLogin() {
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            const isAdmin = document.getElementById('login-admin').checked;
+            
+            if (!username || !password) {
+                showToast('Username et mot de passe requis', 'error');
+                return;
+            }
+            
+            const endpoint = isAdmin ? '/admin/login' : '/user/login';
+            
+            try {
+                const response = await fetch(`${API_BASE}${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const user = {
+                        id: data.id,
+                        name: username,
+                        role: isAdmin ? 'admin' : 'user',
+                        email: data.email,
+                        apiKey: data.api_key
+                    };
+                    
+                    localStorage.setItem('user', JSON.stringify(user));
+                    if (data.api_key) {
+                        localStorage.setItem('adminApiKey', data.api_key);
+                    }
+                    
+                    showToast(`Connexion ${isAdmin ? 'admin' : 'utilisateur'} réussie !`, 'success');
+                    updateStatus();
+                    
+                    // Clear form
+                    document.getElementById('login-username').value = '';
+                    document.getElementById('login-password').value = '';
+                    document.getElementById('login-admin').checked = false;
+                } else {
+                    showToast(data.message || 'Erreur de connexion', 'error');
+                }
+            } catch (error) {
+                showToast('Erreur de connexion au serveur', 'error');
+                log(`Erreur: ${error.message}`);
+            }
+        }
+        
+        async function testFERRegistration() {
+            const user = JSON.parse(localStorage.getItem('user') || 'null');
+            if (!user) {
+                showToast('Vous devez être connecté pour vous inscrire', 'error');
+                return;
+            }
+            
+            const name = document.getElementById('fer-name').value;
+            const email = document.getElementById('fer-email').value;
+            const type = document.getElementById('fer-type').value;
+            const category = document.getElementById('fer-category').value;
+            
+            if (!name || !email || !type) {
+                showToast('Tous les champs sont requis', 'error');
+                return;
+            }
+            
+            if (type === 'candidate' && !category) {
+                showToast('Catégorie requise pour les candidats', 'error');
+                return;
+            }
+            
+            try {
+                const requestData = { name, email, type };
+                if (type === 'candidate') {
+                    requestData.category = category;
+                }
+                
+                const response = await fetch(`${API_BASE}/fer/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showToast('Inscription FER 2025 réussie !', 'success');
+                    // Clear form
+                    document.getElementById('fer-name').value = '';
+                    document.getElementById('fer-email').value = '';
+                    document.getElementById('fer-type').value = '';
+                    document.getElementById('fer-category').value = '';
+                    document.getElementById('fer-category').style.display = 'none';
+                } else {
+                    showToast(data.message || 'Erreur lors de l\\'inscription FER', 'error');
+                }
+            } catch (error) {
+                showToast('Erreur de connexion au serveur', 'error');
+                log(`Erreur: ${error.message}`);
+            }
+        }
+        
+        async function testAdminCandidates() {
+            const user = JSON.parse(localStorage.getItem('user') || 'null');
+            if (!user || user.role !== 'admin') {
+                showToast('Accès administrateur requis', 'error');
+                return;
+            }
+            
+            const apiKey = localStorage.getItem('adminApiKey');
+            if (!apiKey) {
+                showToast('Clé API admin manquante', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/admin/candidates`, {
+                    headers: { 'X-ADMIN-KEY': apiKey }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showToast(`${data.candidates?.length || 0} candidats trouvés`, 'success');
+                    log(`Candidats: ${JSON.stringify(data.candidates, null, 2)}`);
+                } else {
+                    showToast(data.message || 'Erreur accès admin', 'error');
+                }
+            } catch (error) {
+                showToast('Erreur de connexion au serveur', 'error');
+                log(`Erreur: ${error.message}`);
+            }
+        }
+        
+        function testLogout() {
+            localStorage.removeItem('user');
+            localStorage.removeItem('adminApiKey');
+            updateStatus();
+            showToast('Déconnexion réussie', 'info');
+        }
+        
+        // Event listeners
+        document.getElementById('fer-type').addEventListener('change', function() {
+            const category = document.getElementById('fer-category');
+            if (this.value === 'candidate') {
+                category.style.display = 'block';
+            } else {
+                category.style.display = 'none';
+                category.value = '';
+            }
+        });
+        
+        // Initialize
+        updateStatus();
+        log('Test d\\'authentification initialisé');
+        log('Serveur API: ' + API_BASE);
+    </script>
+</body>
+</html>

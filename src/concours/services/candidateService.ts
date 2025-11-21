@@ -14,8 +14,8 @@ async function fallbackSeed() {
 
 export async function getAllCandidates(): Promise<Candidate[]> {
   try {
-    const res = await api.get('/public/candidates');
-    return res.data as Candidate[];
+    const res = await api.get('/candidates');
+    return res.data.candidates as Candidate[];
   } catch (e) {
     await fallbackSeed();
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]') as Candidate[]; } catch { return []; }
@@ -34,8 +34,15 @@ export async function getCandidateBySlug(slug: string): Promise<Candidate | unde
 
 export async function addCandidate(payload: Omit<Candidate, 'id'|'votes'> & Partial<Pick<Candidate,'votes'>>): Promise<Candidate | null> {
   try {
-    const res = await api.post('/candidates', payload);
-    return res.data as Candidate;
+    const res = await api.post('/candidate', payload);
+    // PHP backend returns {id: number, image_url?: string}
+    const newCandidate: Candidate = {
+      ...payload as any,
+      id: res.data.id,
+      votes: payload.votes ?? 0,
+      gallery: payload.gallery || []
+    };
+    return newCandidate;
   } catch (e) {
     // fallback to local
     const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]') as Candidate[];
@@ -49,8 +56,10 @@ export async function addCandidate(payload: Omit<Candidate, 'id'|'votes'> & Part
 
 export async function updateCandidate(id: number, changes: Partial<Candidate>): Promise<Candidate | null> {
   try {
-    const res = await api.put(`/candidates/${id}`, changes);
-    return res.data as Candidate;
+    await api.put(`/candidate/${id}`, changes);
+    // Get updated candidate
+    const res = await api.get(`/candidate/${id}`);
+    return res.data.candidate as Candidate;
   } catch (e) {
     const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]') as Candidate[];
     const idx = list.findIndex(c => c.id === id);
@@ -63,7 +72,7 @@ export async function updateCandidate(id: number, changes: Partial<Candidate>): 
 
 export async function deleteCandidate(id: number): Promise<boolean> {
   try {
-    await api.delete(`/candidates/${id}`);
+    await api.delete(`/candidate/${id}`);
     return true;
   } catch (e) {
     const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]') as Candidate[];

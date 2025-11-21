@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Système Inscription - FER 2025</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border-left: 4px solid #4CAF50;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success { background: rgba(76, 175, 80, 0.3); border-left: 4px solid #4CAF50; }
+        .error { background: rgba(244, 67, 54, 0.3); border-left: 4px solid #f44336; }
+        .warning { background: rgba(255, 193, 7, 0.3); border-left: 4px solid #ff9800; }
+        .info { background: rgba(33, 150, 243, 0.3); border-left: 4px solid #2196f3; }
+        
+        button {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 10px 5px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        .test-data {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        h1, h2 { text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); }
+        
+        .form-group {
+            margin: 15px 0;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        .form-group input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎭 Test Complet du Système d'Inscription FER 2025</h1>
+        
+        <div class="test-section">
+            <h2>🔧 Tests du Backend</h2>
+            <button onclick="testBackendEndpoints()">Tester les Endpoints</button>
+            <button onclick="testUserRegistration()">Test Inscription Utilisateur</button>
+            <button onclick="testAdminRegistration()">Test Inscription Admin</button>
+            <button onclick="testValidation()">Test Validation</button>
+        </div>
+
+        <div class="test-section">
+            <h2>📝 Inscription Interactive</h2>
+            <div class="form-group">
+                <label>Type de compte:</label>
+                <select id="accountType">
+                    <option value="user">Utilisateur Normal</option>
+                    <option value="admin">Administrateur</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Nom d'utilisateur:</label>
+                <input type="text" id="username" placeholder="Ex: jean_dupont" value="testuser">
+            </div>
+            
+            <div class="form-group">
+                <label>Email:</label>
+                <input type="email" id="email" placeholder="Ex: jean@example.com" value="test@example.com">
+            </div>
+            
+            <div class="form-group">
+                <label>Mot de passe:</label>
+                <input type="password" id="password" placeholder="Minimum 6 caractères" value="password123">
+            </div>
+            
+            <button onclick="registerInteractive()">S'inscrire Maintenant</button>
+            <button onclick="loginTest()">Test Login</button>
+        </div>
+
+        <div class="test-section">
+            <h2>📊 Résultats des Tests</h2>
+            <div id="results"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>📋 Données Récentes</h2>
+            <div id="apiData" class="test-data"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000/api';
+
+        function addResult(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+        }
+
+        function updateApiData(data) {
+            const apiData = document.getElementById('apiData');
+            apiData.textContent = JSON.stringify(data, null, 2);
+        }
+
+        async function testBackendEndpoints() {
+            addResult('🔍 Test des endpoints d\'inscription...', 'info');
+            
+            const endpoints = [
+                { path: '/candidates', method: 'GET', desc: 'Liste candidats' },
+                { path: '/categories', method: 'GET', desc: 'Liste catégories' },
+                { path: '/events', method: 'GET', desc: 'Liste événements' }
+            ];
+            
+            for (const endpoint of endpoints) {
+                try {
+                    const response = await fetch(`${API_BASE}${endpoint.path}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        addResult(`✅ ${endpoint.desc}: ${response.status} OK`, 'success');
+                    } else {
+                        addResult(`⚠️ ${endpoint.desc}: ${response.status}`, 'warning');
+                    }
+                } catch (error) {
+                    addResult(`❌ ${endpoint.desc}: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        async function testUserRegistration() {
+            addResult('👤 Test inscription utilisateur normal...', 'info');
+            
+            const userData = {
+                username: 'testuser_' + Date.now(),
+                email: 'test' + Date.now() + '@example.com',
+                password: 'password123'
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE}/user/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(userData)
+                });
+                
+                const data = await response.json();
+                updateApiData(data);
+                
+                if (response.ok && data.ok) {
+                    addResult(`✅ Inscription utilisateur réussie - ID: ${data.user.id}`, 'success');
+                    addResult(`📧 Email: ${data.user.email} | Rôle: ${data.user.role}`, 'info');
+                } else {
+                    addResult(`❌ Inscription échouée: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ Erreur inscription utilisateur: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAdminRegistration() {
+            addResult('👨‍💼 Test inscription administrateur...', 'info');
+            
+            const adminData = {
+                username: 'admin_' + Date.now(),
+                email: 'admin' + Date.now() + '@fer.com',
+                password: 'adminpass123'
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE}/admin/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(adminData)
+                });
+                
+                const data = await response.json();
+                updateApiData(data);
+                
+                if (response.ok && data.ok) {
+                    addResult(`✅ Inscription admin réussie - ID: ${data.id}`, 'success');
+                    addResult(`🔑 API Key: ${data.api_key.substring(0, 16)}...`, 'info');
+                } else {
+                    addResult(`❌ Inscription admin échouée: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ Erreur inscription admin: ${error.message}`, 'error');
+            }
+        }
+
+        async function testValidation() {
+            addResult('🔍 Test de validation des données...', 'info');
+            
+            const testCases = [
+                { data: { username: '', email: 'test@test.com', password: '123456' }, desc: 'Username vide' },
+                { data: { username: 'test', email: 'invalid-email', password: '123456' }, desc: 'Email invalide' },
+                { data: { username: 'test', email: 'test@test.com', password: '123' }, desc: 'Mot de passe trop court' },
+                { data: { username: 'valid', email: 'valid@test.com', password: 'validpass123' }, desc: 'Données valides' }
+            ];
+            
+            for (const testCase of testCases) {
+                try {
+                    const response = await fetch(`${API_BASE}/user/register`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(testCase.data)
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (testCase.desc === 'Données valides') {
+                        if (response.ok && data.ok) {
+                            addResult(`✅ ${testCase.desc}: Validation OK`, 'success');
+                        } else {
+                            addResult(`❌ ${testCase.desc}: Échec inattendu`, 'error');
+                        }
+                    } else {
+                        if (!response.ok || !data.ok) {
+                            addResult(`✅ ${testCase.desc}: Rejet correct - ${data.error}`, 'success');
+                        } else {
+                            addResult(`⚠️ ${testCase.desc}: Validation trop permissive`, 'warning');
+                        }
+                    }
+                } catch (error) {
+                    addResult(`❌ ${testCase.desc}: Erreur - ${error.message}`, 'error');
+                }
+            }
+        }
+
+        async function registerInteractive() {
+            const accountType = document.getElementById('accountType').value;
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            addResult(`🚀 Inscription interactive (${accountType})...`, 'info');
+            
+            if (!username || !email || !password) {
+                addResult('❌ Tous les champs sont requis', 'error');
+                return;
+            }
+            
+            const endpoint = accountType === 'admin' ? '/admin/register' : '/user/register';
+            
+            try {
+                const response = await fetch(`${API_BASE}${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password })
+                });
+                
+                const data = await response.json();
+                updateApiData(data);
+                
+                if (response.ok && data.ok) {
+                    addResult(`✅ Inscription ${accountType} réussie!`, 'success');
+                    if (accountType === 'admin') {
+                        addResult(`🔑 API Key: ${data.api_key}`, 'info');
+                    } else {
+                        addResult(`👤 User ID: ${data.user.id}`, 'info');
+                    }
+                    
+                    // Clear form
+                    document.getElementById('username').value = '';
+                    document.getElementById('email').value = '';
+                    document.getElementById('password').value = '';
+                } else {
+                    addResult(`❌ Inscription échouée: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ Erreur: ${error.message}`, 'error');
+            }
+        }
+
+        async function loginTest() {
+            const accountType = document.getElementById('accountType').value;
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            addResult(`🔐 Test login (${accountType})...`, 'info');
+            
+            const endpoint = accountType === 'admin' ? '/admin/login' : '/user/login';
+            
+            try {
+                const response = await fetch(`${API_BASE}${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                updateApiData(data);
+                
+                if (response.ok && data.ok) {
+                    addResult(`✅ Login ${accountType} réussi!`, 'success');
+                    if (accountType === 'admin' && data.admin) {
+                        addResult(`🔑 Admin: ${data.admin.username}`, 'info');
+                    } else if (data.user) {
+                        addResult(`👤 User: ${data.user.username}`, 'info');
+                    }
+                } else {
+                    addResult(`❌ Login échoué: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ Erreur login: ${error.message}`, 'error');
+            }
+        }
+
+        // Tests automatiques au chargement
+        window.onload = function() {
+            addResult('🎯 Page de test chargée - Backend: ' + API_BASE, 'info');
+            addResult('💡 Utilisez les boutons pour tester les fonctionnalités', 'info');
+            
+            // Test basique automatique
+            setTimeout(testBackendEndpoints, 1000);
+        };
+    </script>
+</body>
+</html>

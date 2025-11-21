@@ -14,13 +14,20 @@ function send_cors() {
         // Allow file:// protocol (origin is 'null')
         header('Access-Control-Allow-Origin: *');
     } else {
-        // Check if the request origin matches the configured origin
-        $allowedOrigins = explode(',', $origin);
+        // Check if the request origin matches any of the configured origins
+        $allowedOrigins = array_map('trim', explode(',', $origin));
         if (in_array($requestOrigin, $allowedOrigins)) {
             header('Access-Control-Allow-Origin: ' . $requestOrigin);
+        } elseif (count($allowedOrigins) === 1) {
+            // Single origin configured, use it as fallback
+            header('Access-Control-Allow-Origin: ' . $allowedOrigins[0]);
         } else {
-            // Fallback to configured origin
-            header('Access-Control-Allow-Origin: ' . $origin);
+            // Multiple origins but none match - allow localhost development
+            if (preg_match('/^http:\/\/localhost:[0-9]+$/', $requestOrigin)) {
+                header('Access-Control-Allow-Origin: ' . $requestOrigin);
+            } else {
+                header('Access-Control-Allow-Origin: ' . $allowedOrigins[0]);
+            }
         }
     }
     

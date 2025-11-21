@@ -404,4 +404,64 @@ if (preg_match('#^candidate/(\d+)$#', $route, $m) && $method === 'DELETE') {
     json_response(['ok' => true]);
 }
 
+// User registration endpoint (for regular users, not admins)
+if ($route === 'user/register' && $method === 'POST') {
+    $data = get_raw_input();
+    $username = $data['username'] ?? '';
+    $email = $data['email'] ?? '';
+    $password = $data['password'] ?? '';
+    
+    if (empty($username) || empty($email) || empty($password)) {
+        json_response(['error' => 'username, email and password required'], 400);
+    }
+    
+    if (strlen($password) < 6) {
+        json_response(['error' => 'password must be at least 6 characters'], 400);
+    }
+    
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        json_response(['error' => 'invalid email format'], 400);
+    }
+    
+    // For MVP, we'll just return success (no database storage for regular users)
+    // In production, you'd want to store users in a separate 'users' table
+    $user_id = 'user_' . time() . '_' . mt_rand(1000, 9999);
+    
+    json_response([
+        'ok' => true, 
+        'user' => [
+            'id' => $user_id,
+            'username' => $username,
+            'email' => $email,
+            'role' => 'user',
+            'created_at' => date('Y-m-d H:i:s')
+        ]
+    ]);
+}
+
+// User login endpoint
+if ($route === 'user/login' && $method === 'POST') {
+    $data = get_raw_input();
+    $username = $data['username'] ?? '';
+    $password = $data['password'] ?? '';
+    
+    if (empty($username) || empty($password)) {
+        json_response(['error' => 'username and password required'], 400);
+    }
+    
+    // For MVP, accept any non-empty credentials for regular users
+    // In production, validate against users table
+    $user_id = 'user_' . time() . '_' . mt_rand(1000, 9999);
+    
+    json_response([
+        'ok' => true,
+        'user' => [
+            'id' => $user_id,
+            'username' => $username,
+            'role' => 'user',
+            'login_at' => date('Y-m-d H:i:s')
+        ]
+    ]);
+}
+
 json_response(['error' => 'Unknown route'], 404);

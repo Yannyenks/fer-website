@@ -3,6 +3,7 @@ import { useAuth } from './AuthProvider';
 import { Link } from 'react-router-dom';
 import { HeartLogo } from './icons/HeartLogo';
 import AppImage from './AppImage';
+import UserMenu from './UserMenu';
 
 interface NavLink {
   title: string;
@@ -14,6 +15,8 @@ interface NavLink {
 interface HeaderProps {
   navLinks: NavLink[];
 }
+
+
 
 const Header: React.FC<HeaderProps> = ({ navLinks }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -93,6 +96,11 @@ const Header: React.FC<HeaderProps> = ({ navLinks }) => {
             )
           )}
 
+          {/* AUTH SECTION DESKTOP */}
+          <div className="hidden md:flex items-center space-x-4">
+            <UserMenu />
+          </div>
+
           {/* BOUTON "Rejoignez-nous" */}
           <button
             onClick={() => scrollToSection('contact')}
@@ -160,9 +168,14 @@ const Header: React.FC<HeaderProps> = ({ navLinks }) => {
               )
             )}
 
+            {/* Auth Buttons Mobile */}
+            <div className="mt-4 space-y-2">
+              <UserMenu />
+            </div>
+            
             <button
               onClick={() => scrollToSection('contact')}
-              className="mt-4 bg-custom-green text-white font-bold py-2 px-6 rounded-full hover:bg-opacity-90 transition-all transform hover:scale-105"
+              className="mt-4 bg-custom-green text-white font-bold py-2 px-6 rounded-full hover:bg-opacity-90 transition-all transform hover:scale-105 w-full"
             >
               Rejoignez-nous
             </button>
