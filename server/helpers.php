@@ -177,13 +177,20 @@ function upload_image($file, $prefix = 'img') {
         return ['success' => false, 'error' => 'Failed to move uploaded file'];
     }
     
-    // Generate URL for the client
-    $baseUrl = env('API_URL', '');
-    if (empty($baseUrl)) {
-        // Try to construct from request
-        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-        $baseUrl = $protocol . '://' . $host;
+    // Generate URL for the client - detect automatically from request
+    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $baseUrl = $protocol . '://' . $host;
+    
+    // Override with API_URL only if it matches the current host
+    $configuredUrl = env('API_URL', '');
+    if (!empty($configuredUrl)) {
+        $parsedConfigUrl = parse_url($configuredUrl);
+        $configHost = $parsedConfigUrl['host'] ?? '';
+        // Use configured URL only if hosts match or if we're in production
+        if ($configHost === $host || is_production()) {
+            $baseUrl = rtrim($configuredUrl, '/');
+        }
     }
     
     $imageUrl = $baseUrl . '/storage/' . $filename;

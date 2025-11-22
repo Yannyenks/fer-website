@@ -1,6 +1,9 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+// Toujours utiliser /api (relatif)
+// En dev: proxy Vite redirige vers localhost:8000
+// En prod: .htaccess redirige vers server/index.php
+const API_URL = '/api';
 
 const api = axios.create({
   baseURL: API_URL,

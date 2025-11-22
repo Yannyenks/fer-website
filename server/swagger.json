@@ -8,7 +8,11 @@
   "servers": [
     {
       "url": "http://localhost:8000/api",
-      "description": "Serveur local"
+      "description": "Serveur local de développement"
+    },
+    {
+      "url": "https://jvepi.com/api",
+      "description": "Serveur de production (LWS)"
     }
   ],
   "components": {
@@ -50,6 +54,17 @@
           "id": {"type": "integer"},
           "name": {"type": "string"},
           "image": {"type": "string"}
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "integer"},
+          "username": {"type": "string"},
+          "email": {"type": "string", "format": "email"},
+          "role": {"type": "string", "enum": ["user", "admin"], "default": "user"},
+          "created_at": {"type": "string", "format": "date-time"},
+          "last_login": {"type": "string", "format": "date-time"}
         }
       },
       "Error": {
@@ -637,6 +652,166 @@
             }
           },
           "404": {"description": "Token non trouvé"}
+        }
+      }
+    },
+    "/user/register": {
+      "post": {
+        "summary": "Enregistrer un nouvel utilisateur",
+        "tags": ["Users"],
+        "description": "Créer un compte utilisateur pour voter et participer aux événements",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["username", "email", "password"],
+                "properties": {
+                  "username": {"type": "string", "example": "johndoe"},
+                  "email": {"type": "string", "format": "email", "example": "john@example.com"},
+                  "password": {"type": "string", "minLength": 6, "example": "password123"}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Utilisateur créé avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {"type": "boolean"},
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {"type": "integer"},
+                        "username": {"type": "string"},
+                        "email": {"type": "string"},
+                        "role": {"type": "string", "example": "user"},
+                        "created_at": {"type": "string", "format": "date-time"}
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {"description": "Données invalides ou mot de passe trop court"},
+          "409": {"description": "Username ou email déjà existant"}
+        }
+      }
+    },
+    "/user/login": {
+      "post": {
+        "summary": "Connexion utilisateur",
+        "tags": ["Users"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["username", "password"],
+                "properties": {
+                  "username": {"type": "string", "example": "johndoe"},
+                  "password": {"type": "string", "example": "password123"}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authentification réussie",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {"type": "boolean"},
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {"type": "integer"},
+                        "username": {"type": "string"},
+                        "email": {"type": "string"},
+                        "role": {"type": "string", "example": "user"},
+                        "login_at": {"type": "string", "format": "date-time"}
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {"description": "Données manquantes"},
+          "401": {"description": "Identifiants incorrects"}
+        }
+      }
+    },
+    "/votes/stats": {
+      "get": {
+        "summary": "Statistiques des votes (admin)",
+        "tags": ["Votes"],
+        "security": [{"AdminKey": []}],
+        "description": "Obtenir le nombre total de votes et les statistiques par candidat",
+        "responses": {
+          "200": {
+            "description": "Statistiques des votes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "total_votes": {"type": "integer", "example": 1250},
+                    "candidates": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {"type": "integer"},
+                          "name": {"type": "string"},
+                          "votes": {"type": "integer", "description": "Compteur dans la table candidates"},
+                          "actual_votes": {"type": "integer", "description": "Compteur réel depuis la table votes"}
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {"description": "Non autorisé"}
+        }
+      }
+    },
+    "/votes/sync": {
+      "post": {
+        "summary": "Synchroniser les compteurs de votes (admin)",
+        "tags": ["Votes"],
+        "security": [{"AdminKey": []}],
+        "description": "Recalculer tous les compteurs de votes depuis la table votes pour corriger les incohérences",
+        "responses": {
+          "200": {
+            "description": "Compteurs synchronisés",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {"type": "boolean"},
+                    "message": {"type": "string", "example": "Vote counts synchronized"}
+                  }
+                }
+              }
+            }
+          },
+          "401": {"description": "Non autorisé"},
+          "500": {"description": "Erreur de synchronisation"}
         }
       }
     },

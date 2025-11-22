@@ -1,19 +1,16 @@
-# Frontend .htaccess for SPA routing
-<IfModule mod_rewrite.c>
-    RewriteEngine On
-    RewriteBase /
-    
-    # Handle client-side routing - serve index.html for all routes
-    RewriteRule ^index\.html$ - [L]
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule . /index.html [L]
-</IfModule>
+RewriteEngine On
+RewriteBase /
 
-# Cache static assets
-<IfModule mod_expires.c>
-    ExpiresActive on
-    ExpiresByType image/* "access plus 1 month"
-    ExpiresByType text/css "access plus 1 month"
-    ExpiresByType application/javascript "access plus 1 month"
-</IfModule>
+# 0️⃣ Bloquer totalement la réécriture pour /server/*
+RewriteRule ^server/ - [L]
+
+# 1️⃣ Servir directement les fichiers existants
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# 2️⃣ Router API vers le backend
+RewriteRule ^api/(.*)$ /api/index.php?path=$1 [L,QSA]
+
+# 3️⃣ Fallback React SPA
+RewriteRule ^ index.html [L]

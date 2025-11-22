@@ -11,27 +11,22 @@ function normalizeImageUrl(imageUrl: string | null): string {
   // If it's already a data URL, return as is
   if (imageUrl.startsWith('data:')) return imageUrl;
   
-  // If it's a relative path starting with /storage/, prepend the API base URL
+  // If it's a relative path starting with /storage/, return as-is
   if (imageUrl.startsWith('/storage/')) {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-    const baseUrl = apiUrl.replace('/api', ''); // Remove /api suffix
-    return baseUrl + imageUrl;
+    return imageUrl; // .htaccess gère le routing
   }
   
-  // If it's already a full URL pointing to a different host, check if it needs fixing
+  // If it's already a full URL, extract the /storage/ part
   if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-    // Extract the path part if it contains /storage/
     const match = imageUrl.match(/\/storage\/.+$/);
     if (match) {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-      const baseUrl = apiUrl.replace('/api', '');
-      return baseUrl + match[0];
+      return match[0]; // Juste le chemin relatif
     }
     return imageUrl;
   }
   
-  // Otherwise return as is
-  return imageUrl;
+  // Si c'est juste un nom de fichier, ajouter /storage/
+  return `/storage/${imageUrl}`;
 }
 
 async function fallbackSeed() {
