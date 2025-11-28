@@ -1,0 +1,239 @@
+/**
+ * Système de typographie responsive global
+ * Utilise clamp() pour des tailles fluides selon la résolution
+ * 
+ * Formule: clamp(min, préféré, max)
+ * - min: taille minimale (mobile)
+ * - préféré: taille fluide basée sur la largeur de viewport (vw)
+ * - max: taille maximale (desktop)
+ */
+
+:root {
+  /* === Tailles de base === */
+  --font-size-base: clamp(0.875rem, 0.8rem + 0.375vw, 1rem);
+  /* 14px → 16px */
+  
+  /* === Titres === */
+  --font-size-h1: clamp(1.75rem, 1.5rem + 1.25vw, 3rem);
+  /* 28px → 48px */
+  
+  --font-size-h2: clamp(1.5rem, 1.25rem + 1.25vw, 2.5rem);
+  /* 24px → 40px */
+  
+  --font-size-h3: clamp(1.25rem, 1.125rem + 0.625vw, 2rem);
+  /* 20px → 32px */
+  
+  --font-size-h4: clamp(1.125rem, 1rem + 0.625vw, 1.5rem);
+  /* 18px → 24px */
+  
+  --font-size-h5: clamp(1rem, 0.95rem + 0.25vw, 1.25rem);
+  /* 16px → 20px */
+  
+  --font-size-h6: clamp(0.875rem, 0.85rem + 0.125vw, 1rem);
+  /* 14px → 16px */
+  
+  /* === Corps de texte === */
+  --font-size-body: var(--font-size-base);
+  /* 14px → 16px */
+  
+  --font-size-body-large: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  /* 16px → 18px */
+  
+  --font-size-body-small: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+  /* 12px → 14px */
+  
+  /* === Éléments spéciaux === */
+  --font-size-caption: clamp(0.625rem, 0.6rem + 0.125vw, 0.75rem);
+  /* 10px → 12px */
+  
+  --font-size-button: clamp(0.875rem, 0.85rem + 0.125vw, 1rem);
+  /* 14px → 16px */
+  
+  --font-size-button-large: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  /* 16px → 18px */
+  
+  --font-size-lead: clamp(1.125rem, 1rem + 0.625vw, 1.5rem);
+  /* 18px → 24px */
+  
+  --font-size-display: clamp(2.5rem, 2rem + 2.5vw, 4rem);
+  /* 40px → 64px */
+  
+  /* === Hauteurs de ligne === */
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+  
+  /* === Espacement des lettres === */
+  --letter-spacing-tight: -0.025em;
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide: 0.025em;
+  --letter-spacing-wider: 0.05em;
+  
+  /* === Poids de police === */
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+}
+
+/* === Classes utilitaires === */
+
+/* Titres */
+.text-h1 {
+  font-size: var(--font-size-h1);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-bold);
+}
+
+.text-h2 {
+  font-size: var(--font-size-h2);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-bold);
+}
+
+.text-h3 {
+  font-size: var(--font-size-h3);
+  line-height: var(--line-height-normal);
+  font-weight: var(--font-weight-semibold);
+}
+
+.text-h4 {
+  font-size: var(--font-size-h4);
+  line-height: var(--line-height-normal);
+  font-weight: var(--font-weight-semibold);
+}
+
+.text-h5 {
+  font-size: var(--font-size-h5);
+  line-height: var(--line-height-normal);
+  font-weight: var(--font-weight-medium);
+}
+
+.text-h6 {
+  font-size: var(--font-size-h6);
+  line-height: var(--line-height-normal);
+  font-weight: var(--font-weight-medium);
+}
+
+/* Corps de texte */
+.text-body {
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-normal);
+}
+
+.text-body-large {
+  font-size: var(--font-size-body-large);
+  line-height: var(--line-height-relaxed);
+}
+
+.text-body-small {
+  font-size: var(--font-size-body-small);
+  line-height: var(--line-height-normal);
+}
+
+.text-caption {
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-normal);
+}
+
+.text-lead {
+  font-size: var(--font-size-lead);
+  line-height: var(--line-height-relaxed);
+}
+
+.text-display {
+  font-size: var(--font-size-display);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-extrabold);
+}
+
+/* === Application aux éléments HTML standard === */
+html {
+  font-size: 16px; /* Base pour les calculs rem */
+}
+
+body {
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-normal);
+}
+
+h1 {
+  font-size: var(--font-size-h1);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-bold);
+}
+
+h2 {
+  font-size: var(--font-size-h2);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-bold);
+}
+
+h3 {
+  font-size: var(--font-size-h3);
+  line-height: var(--line-height-normal);
+  font-weight: var(--font-weight-semibold);
+}
+
+h4 {
+  font-size: var(--font-size-h4);
+  line-height: var(--line-height-normal);
+  font-weight: var(--font-weight-semibold);
+}
+
+h5 {
+  font-size: var(--font-size-h5);
+  line-height: var(--line-height-normal);
+  font-weight: var(--font-weight-medium);
+}
+
+h6 {
+  font-size: var(--font-size-h6);
+  line-height: var(--line-height-normal);
+  font-weight: var(--font-weight-medium);
+}
+
+p {
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-relaxed);
+}
+
+small {
+  font-size: var(--font-size-body-small);
+}
+
+button {
+  font-size: var(--font-size-button);
+}
+
+/* === Breakpoints pour référence === */
+/*
+  Mobile: < 640px
+  Tablet: 640px - 1024px
+  Desktop: > 1024px
+  Large Desktop: > 1440px
+  
+  Les tailles sont fluides grâce à clamp()
+  Ajustez les valeurs dans :root si besoin
+*/
+
+/* === Classes de poids === */
+.font-light { font-weight: var(--font-weight-light); }
+.font-normal { font-weight: var(--font-weight-normal); }
+.font-medium { font-weight: var(--font-weight-medium); }
+.font-semibold { font-weight: var(--font-weight-semibold); }
+.font-bold { font-weight: var(--font-weight-bold); }
+.font-extrabold { font-weight: var(--font-weight-extrabold); }
+
+/* === Classes de hauteur de ligne === */
+.leading-tight { line-height: var(--line-height-tight); }
+.leading-normal { line-height: var(--line-height-normal); }
+.leading-relaxed { line-height: var(--line-height-relaxed); }
+
+/* === Classes d'espacement === */
+.tracking-tight { letter-spacing: var(--letter-spacing-tight); }
+.tracking-normal { letter-spacing: var(--letter-spacing-normal); }
+.tracking-wide { letter-spacing: var(--letter-spacing-wide); }
+.tracking-wider { letter-spacing: var(--letter-spacing-wider); }

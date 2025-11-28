@@ -8,7 +8,7 @@ export default defineConfig(({ mode }) => {
   
   return {
     // Base path relatif pour que React trouve ses assets
-    base: './',
+    base: '/',
     
     server: {
       port: 3000,

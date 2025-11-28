@@ -125,13 +125,13 @@ const Login: React.FC = () => {
           </p>
         </div>
 
-        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+        {/* <div className="mt-4 p-3 bg-gray-50 rounded-lg">
           <h3 className="text-sm font-semibold text-gray-700 mb-2">💡 Connexions de test :</h3>
           <div className="text-xs text-gray-600 space-y-1">
             <p><strong>Admin :</strong> admin / password123 (avec case cochée)</p>
             <p><strong>User :</strong> N'importe quel nom/mot de passe (case décochée)</p>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );

@@ -26,12 +26,14 @@ CREATE TABLE IF NOT EXISTS event_images (
 CREATE TABLE IF NOT EXISTS candidates (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
+  type ENUM('miss', 'awards') DEFAULT 'miss',
   category_id INT DEFAULT NULL,
   bio TEXT,
   image VARCHAR(255) DEFAULT NULL,
   votes INT DEFAULT 0,
   extra JSON DEFAULT NULL,
-  FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
+  FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
+  INDEX idx_candidate_type (type)
 );
 
 CREATE TABLE IF NOT EXISTS candidate_images (

@@ -1,67 +1,34 @@
-# Configuration pour serveur LWS - Déploiement JVEPI
-# Ce fichier gère à la fois le frontend (dist/) et le backend (server/)
+DirectoryIndex index.html
 
-# Activer le moteur de réécriture
-RewriteEngine On
-RewriteBase /
-
-# Servir les fichiers statiques du dossier dist
-RewriteCond %{REQUEST_URI} !^/api
-RewriteCond %{REQUEST_URI} !^/storage
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)$ dist/$1 [L]
-
-# Si le fichier n'existe pas dans dist, servir index.html (SPA)
-RewriteCond %{REQUEST_URI} !^/api
-RewriteCond %{REQUEST_URI} !^/storage
-RewriteCond %{DOCUMENT_ROOT}/dist/%{REQUEST_URI} !-f
-RewriteCond %{DOCUMENT_ROOT}/dist/%{REQUEST_URI} !-d
-RewriteRule ^(.*)$ dist/index.html [L]
-
-# Routes API vers le backend PHP
-RewriteRule ^api/(.*)$ server/index.php [QSA,L]
-
-# Servir les images du dossier storage
-RewriteRule ^storage/(.*)$ server/index.php [QSA,L]
-
-# Swagger
-RewriteRule ^swagger$ server/index.php [QSA,L]
-RewriteRule ^api/swagger.json$ server/swagger.json [L]
-
-# Sécurité: Bloquer l'accès direct aux fichiers .env
-<FilesMatch "^\.env">
-    Order allow,deny
-    Deny from all
+# 0️⃣ Bloquer l'accès aux fichiers sensibles (sauf dans /api/)
+<FilesMatch "\.(sql|sh|ps1)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
 </FilesMatch>
 
-# Permissions pour le dossier storage
-<Directory "storage">
-    Options -Indexes
-    AllowOverride None
-    Require all granted
-</Directory>
+# Bloquer les fichiers .env
+<FilesMatch "^\.env">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+</FilesMatch>
 
-# Headers de sécurité
-<IfModule mod_headers.c>
-    Header set X-Content-Type-Options "nosniff"
-    Header set X-Frame-Options "SAMEORIGIN"
-    Header set X-XSS-Protection "1; mode=block"
+# Bloquer l'accès aux dossiers sensibles (sauf /api/)
+RedirectMatch 403 ^/(server|scripts|storage)(/.*)?$
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # 1️⃣ Router API vers le contrôleur PHP
+    RewriteRule ^api/(.*)$ api/index.php?path=$1 [L,QSA]
+
+    # 2️⃣ Servir directement les fichiers existants (fichiers et dossiers)
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # 3️⃣ Fallback React SPA
+    RewriteRule ^(.*)$ index.html [L]
 </IfModule>
-
-# Compression
-<IfModule mod_deflate.c>
-    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
-</IfModule>
-
-# Cache pour les assets statiques
-<IfModule mod_expires.c>
-    ExpiresActive On
-    ExpiresByType image/jpg "access plus 1 year"
-    ExpiresByType image/jpeg "access plus 1 year"
-    ExpiresByType image/png "access plus 1 year"
-    ExpiresByType image/webp "access plus 1 year"
-    ExpiresByType text/css "access plus 1 month"
-    ExpiresByType application/javascript "access plus 1 month"
-</IfModule>
-

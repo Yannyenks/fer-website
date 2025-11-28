@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test API Invitations</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1e1e1e; color: #d4d4d4; }
+        button { padding: 10px 20px; margin: 10px; background: #007acc; color: white; border: none; cursor: pointer; }
+        button:hover { background: #005a9e; }
+        pre { background: #2d2d2d; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        .success { color: #4ec9b0; }
+        .error { color: #f48771; }
+        .warning { color: #dcdcaa; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test API Admin Invitations</h1>
+    
+    <div>
+        <button onclick="testWithApiKey()">Test avec API Key</button>
+        <button onclick="testWithoutApiKey()">Test sans API Key</button>
+        <button onclick="clearResult()">Clear</button>
+    </div>
+
+    <h2>Résultat :</h2>
+    <pre id="result">Cliquez sur un bouton pour tester...</pre>
+
+    <script>
+        const API_KEY = '29dec696192ccccc2ddc390c11bc5a6e7e1f5101fa1f8092aed6658852bdfc90';
+        const resultEl = document.getElementById('result');
+
+        async function testWithApiKey() {
+            resultEl.innerHTML = '<span class="warning">⏳ Test en cours...</span>';
+            
+            try {
+                const response = await fetch('/api/admin/invitations', {
+                    method: 'GET',
+                    headers: {
+                        'X-ADMIN-KEY': API_KEY,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultEl.innerHTML = `<span class="success">✅ SUCCESS (${response.status})</span>\n\n${JSON.stringify(data, null, 2)}`;
+                } else {
+                    resultEl.innerHTML = `<span class="error">❌ ERROR (${response.status})</span>\n\n${JSON.stringify(data, null, 2)}`;
+                }
+            } catch (error) {
+                resultEl.innerHTML = `<span class="error">❌ EXCEPTION</span>\n\n${error.message}`;
+            }
+        }
+
+        async function testWithoutApiKey() {
+            resultEl.innerHTML = '<span class="warning">⏳ Test en cours...</span>';
+            
+            try {
+                const response = await fetch('/api/admin/invitations', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultEl.innerHTML = `<span class="success">✅ SUCCESS (${response.status})</span>\n\n${JSON.stringify(data, null, 2)}`;
+                } else {
+                    resultEl.innerHTML = `<span class="error">❌ ERROR (${response.status}) - C'est normal !</span>\n\n${JSON.stringify(data, null, 2)}`;
+                }
+            } catch (error) {
+                resultEl.innerHTML = `<span class="error">❌ EXCEPTION</span>\n\n${error.message}`;
+            }
+        }
+
+        function clearResult() {
+            resultEl.innerHTML = 'Cliquez sur un bouton pour tester...';
+        }
+    </script>
+</body>
+</html>

@@ -6,10 +6,11 @@ import api from '../../services/api';
 
 const CandidatesAdmin: React.FC = () => {
   const [list, setList] = useState<Candidate[]>([]);
-  const [form, setForm] = useState({ name: '', slug: '', age: 20, origin: '', domain: '', bio: '', photo: '', votes: 0 });
+  const [form, setForm] = useState({ name: '', slug: '', type: 'miss' as 'miss' | 'awards', age: 0, origin: '', domain: '', bio: '', photo: '', votes: 0 });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [filterType, setFilterType] = useState<'all' | 'miss' | 'awards'>('all');
 
   const refresh = () => setList(getAllCandidates());
 
@@ -54,7 +55,7 @@ const CandidatesAdmin: React.FC = () => {
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage(null);
-    if (!form.name || !form.slug) return setMessage({ type: 'error', text: 'Nom et slug requis' });
+    if (!form.name || !form.slug) return setMessage({ type: 'error', text: 'Nom et identifiant URL requis' });
 
     setUploading(true);
     
@@ -75,7 +76,7 @@ const CandidatesAdmin: React.FC = () => {
     const existing = allCandidates.find(c => c.slug === form.slug);
     if (existing && existing.id !== editingId) {
       setUploading(false);
-      return setMessage({ type: 'error', text: 'Le slug existe déjà. Choisissez-en un autre.' });
+      return setMessage({ type: 'error', text: 'Cet identifiant URL existe déjà. Choisissez-en un autre.' });
     }
 
     if (editingId) {
@@ -83,7 +84,7 @@ const CandidatesAdmin: React.FC = () => {
       setUploading(false);
       if (!updated) return setMessage({ type: 'error', text: 'Erreur lors de la mise à jour' });
       setEditingId(null);
-      setForm({ name: '', slug: '', age: 20, origin: '', domain: '', bio: '', photo: '', votes: 0 });
+      setForm({ name: '', slug: '', type: 'miss', age: 0, origin: '', domain: '', bio: '', photo: '', votes: 0 });
       setSelectedFile(null);
       setList(await getAllCandidates());
       setMessage({ type: 'success', text: 'Candidat mis à jour.' });
@@ -92,7 +93,7 @@ const CandidatesAdmin: React.FC = () => {
 
     await addCandidate({ ...form, photo: photoUrl, votes: 0, gallery: [] });
     setUploading(false);
-    setForm({ name: '', slug: '', age: 20, origin: '', domain: '', bio: '', photo: '', votes: 0 });
+    setForm({ name: '', slug: '', type: 'miss', age: 0, origin: '', domain: '', bio: '', photo: '', votes: 0 });
     setSelectedFile(null);
     setList(await getAllCandidates());
     setMessage({ type: 'success', text: 'Candidat ajouté.' });
@@ -109,7 +110,7 @@ const CandidatesAdmin: React.FC = () => {
 
   const handleEdit = (c: Candidate) => {
     setEditingId(c.id);
-    setForm({ name: c.name, slug: c.slug, age: c.age, origin: c.origin, domain: c.domain, bio: c.bio, photo: c.photo, votes: c.votes || 0 });
+    setForm({ name: c.name, slug: c.slug, type: c.type || 'miss', age: c.age, origin: c.origin, domain: c.domain, bio: c.bio, photo: c.photo, votes: c.votes || 0 });
     setSelectedFile(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -123,55 +124,232 @@ const CandidatesAdmin: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen p-6 bg-gray-50">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-2xl font-bold mb-4">Gestion des candidats</h1>
+    <div className="min-h-screen p-4 bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-3xl font-bold mb-8 text-gray-800 text-center">Gestion des candidats</h1>
 
-        <form onSubmit={handleAdd} className="mb-6 bg-white p-4 rounded shadow">
+        {/* Filtre par type */}
+        <div className="mb-6 backdrop-blur-lg bg-white/70 p-4 rounded-2xl shadow-xl border border-white/50">
+          <label className="block text-sm font-medium text-gray-700 mb-2">Filtrer par catégorie :</label>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setFilterType('all')}
+              className={`px-4 py-2 rounded-lg transition-all ${
+                filterType === 'all'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg'
+                  : 'bg-white text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              📋 Tous ({list.length})
+            </button>
+            <button
+              onClick={() => setFilterType('miss')}
+              className={`px-4 py-2 rounded-lg transition-all ${
+                filterType === 'miss'
+                  ? 'bg-gradient-to-r from-pink-600 to-rose-700 text-white shadow-lg'
+                  : 'bg-white text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              👑 Miss ({list.filter(c => (c.type || 'miss') === 'miss').length})
+            </button>
+            <button
+              onClick={() => setFilterType('awards')}
+              className={`px-4 py-2 rounded-lg transition-all ${
+                filterType === 'awards'
+                  ? 'bg-gradient-to-r from-yellow-600 to-amber-700 text-white shadow-lg'
+                  : 'bg-white text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              🏆 Awards ({list.filter(c => c.type === 'awards').length})
+            </button>
+          </div>
+        </div>
+
+        <form onSubmit={handleAdd} className="mb-8 backdrop-blur-lg bg-white/70 p-6 rounded-2xl shadow-xl border border-white/50">
           {message && (
-            <div className={`p-2 mb-3 ${message.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>{message.text}</div>
+            <div className={`p-3 mb-4 rounded-lg ${
+              message.type === 'success' 
+                ? 'bg-green-100 text-green-800 border border-green-200' 
+                : 'bg-red-100 text-red-800 border border-red-200'
+            }`}>
+              {message.text}
+            </div>
           )}
-          <div className="grid md:grid-cols-3 gap-3">
-            <input value={form.name} onChange={(e)=>setForm({...form, name:e.target.value})} placeholder="Nom" className="p-2 border rounded" />
-            <input value={form.slug} onChange={(e)=>setForm({...form, slug:e.target.value})} placeholder="slug (url-friendly)" className="p-2 border rounded" />
-            <input type="number" value={form.age} onChange={(e)=>setForm({...form, age: Number(e.target.value)})} placeholder="Age" className="p-2 border rounded" />
-            <input value={form.origin} onChange={(e)=>setForm({...form, origin:e.target.value})} placeholder="Origine" className="p-2 border rounded" />
-            <input value={form.domain} onChange={(e)=>setForm({...form, domain:e.target.value})} placeholder="Domaine" className="p-2 border rounded" />
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nom complet *</label>
+              <input 
+                value={form.name} 
+                onChange={(e)=>setForm({...form, name:e.target.value})} 
+                placeholder="Ex: Jean Dupont" 
+                className="w-full p-3 border border-gray-300 rounded-lg bg-white/80 backdrop-blur-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Identifiant URL *</label>
+              <input 
+                value={form.slug} 
+                onChange={(e)=>setForm({...form, slug:e.target.value})} 
+                placeholder="Ex: jean-dupont" 
+                className="w-full p-3 border border-gray-300 rounded-lg bg-white/80 backdrop-blur-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <div className="text-xs text-gray-500 mt-1">Utilisé dans l'URL (lettres, chiffres, tirets)</div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Type de candidat *</label>
+              <select 
+                value={form.type} 
+                onChange={(e)=>setForm({...form, type: e.target.value as 'miss' | 'awards'})} 
+                className="w-full p-3 border border-gray-300 rounded-lg bg-white/80 backdrop-blur-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="miss">👑 Miss</option>
+                <option value="awards">🏆 Awards</option>
+              </select>
+              <div className="text-xs text-gray-500 mt-1">Miss ou Awards (non visible publiquement)</div>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Âge</label>
+              <input 
+                type="number" 
+                value={form.age} 
+                onChange={(e)=>setForm({...form, age: Number(e.target.value)})} 
+                placeholder="Ex: 25" 
+                className="w-full p-3 border border-gray-300 rounded-lg bg-white/80 backdrop-blur-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Origine</label>
+              <input 
+                value={form.origin} 
+                onChange={(e)=>setForm({...form, origin:e.target.value})} 
+                placeholder="Ex: Paris, France" 
+                className="w-full p-3 border border-gray-300 rounded-lg bg-white/80 backdrop-blur-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Domaine d'activité</label>
+              <input 
+                value={form.domain} 
+                onChange={(e)=>setForm({...form, domain:e.target.value})} 
+                placeholder="Ex: Musique, Art, Sport..." 
+                className="w-full p-3 border border-gray-300 rounded-lg bg-white/80 backdrop-blur-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            
             {editingId && (
-              <div className="p-2 border rounded bg-gray-50">
-                <span className="text-sm text-gray-600">Votes: </span>
+              <div className="p-3 border border-gray-300 rounded-lg bg-white/80 backdrop-blur-sm">
+                <span className="text-sm text-gray-600">Votes actuels: </span>
                 <span className="font-semibold text-green-600">{form.votes}</span>
               </div>
             )}
-            <div className={editingId ? 'md:col-span-3' : ''}>
-              <input type="file" accept="image/*" onChange={(e)=>handleFile(e.target.files?.[0])} />
-              <div className="text-sm text-gray-500 mt-1">Ou collez une URL dans le champ photo</div>
-              <input value={form.photo} onChange={(e)=>setForm({...form, photo:e.target.value})} placeholder="URL ou image" className="p-2 border rounded mt-2 w-full" />
-            </div>
-            <textarea value={form.bio} onChange={(e)=>setForm({...form, bio:e.target.value})} placeholder="Bio" className="p-2 border rounded md:col-span-3" />
           </div>
-          <div className="mt-3">
+
+          <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Image du candidat</label>
+              <input 
+                type="file" 
+                accept="image/*" 
+                onChange={(e)=>handleFile(e.target.files?.[0])}
+                className="w-full p-2 border border-gray-300 rounded-lg bg-white/80 backdrop-blur-sm"
+              />
+              <div className="text-sm text-gray-500">Ou collez une URL dans le champ ci-dessous</div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">URL de la photo</label>
+              <input 
+                value={form.photo} 
+                onChange={(e)=>setForm({...form, photo:e.target.value})} 
+                placeholder="https://..." 
+                className="w-full p-3 border border-gray-300 rounded-lg bg-white/80 backdrop-blur-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Biographie</label>
+            <textarea 
+              value={form.bio} 
+              onChange={(e)=>setForm({...form, bio:e.target.value})} 
+              placeholder="Décrivez le parcours et les réalisations du candidat..." 
+              rows={4}
+              className="w-full p-3 border border-gray-300 rounded-lg bg-white/80 backdrop-blur-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-3">
             <button 
               type="submit" 
               disabled={uploading}
-              className="px-4 py-2 bg-green-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-lg shadow-lg hover:from-blue-700 hover:to-indigo-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {uploading ? 'Upload en cours...' : (editingId ? 'Sauvegarder les modifications' : 'Ajouter')}
+              {uploading ? '📤 Upload en cours...' : (editingId ? '💾 Sauvegarder' : '➕ Ajouter le candidat')}
             </button>
-            {editingId && <button type="button" onClick={()=>{ setEditingId(null); setForm({ name: '', slug: '', age: 20, origin: '', domain: '', bio: '', photo: '', votes: 0 }); setSelectedFile(null); }} className="ml-2 px-4 py-2 border rounded">Annuler</button>}
+            {editingId && (
+              <button 
+                type="button" 
+                onClick={()=>{ 
+                  setEditingId(null); 
+                  setForm({ name: '', slug: '', type: 'miss', age: 0, origin: '', domain: '', bio: '', photo: '', votes: 0 }); 
+                  setSelectedFile(null); 
+                }} 
+                className="px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-lg shadow-lg hover:from-gray-600 hover:to-gray-700 transition-all"
+              >
+                ✖ Annuler
+              </button>
+            )}
           </div>
         </form>
 
-        <div className="grid md:grid-cols-3 gap-4">
-          {list.map(c => (
-            <div key={c.id} className="bg-white p-3 rounded shadow">
-              <img src={c.photo} alt={c.name} className="w-full h-40 object-cover rounded" />
-              <h3 className="mt-2 font-semibold">{c.name}</h3>
-              <p className="text-sm text-gray-600">{c.domain} • {c.origin}</p>
-              <p className="text-sm font-semibold text-green-600 mt-1">{c.votes || 0} vote{c.votes !== 1 ? 's' : ''}</p>
-              <div className="mt-3 flex gap-2">
-                <button onClick={()=>handleDelete(c.id)} className="px-3 py-1 bg-red-600 text-white rounded">Supprimer</button>
-                <button onClick={()=>handleEdit(c)} className="px-3 py-1 bg-blue-600 text-white rounded">Modifier</button>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {list
+            .filter(c => filterType === 'all' || (c.type || 'miss') === filterType)
+            .map(c => (
+            <div key={c.id} className="backdrop-blur-lg bg-white/70 rounded-2xl shadow-xl overflow-hidden border border-white/50 transition-transform hover:scale-105">
+              <div className="relative h-48 overflow-hidden">
+                <img 
+                  src={c.photo} 
+                  alt={c.name} 
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = 'https://via.placeholder.com/300x200?text=Image+non+disponible';
+                  }}
+                />
+                {/* Badge type */}
+                <div className={`absolute top-2 right-2 px-3 py-1 rounded-full text-white text-xs font-semibold shadow-lg ${
+                  (c.type || 'miss') === 'miss' 
+                    ? 'bg-gradient-to-r from-pink-500 to-rose-600' 
+                    : 'bg-gradient-to-r from-yellow-500 to-amber-600'
+                }`}>
+                  {(c.type || 'miss') === 'miss' ? '👑 Miss' : '🏆 Awards'}
+                </div>
+              </div>
+              <div className="p-4">
+                <h3 className="text-lg font-semibold text-gray-800 truncate">{c.name}</h3>
+                <p className="text-sm text-gray-600 mt-1 truncate">{c.domain} • {c.origin}</p>
+                <p className="text-sm font-semibold text-green-600 mt-2">
+                  {c.votes || 0} vote{c.votes !== 1 ? 's' : ''}
+                </p>
+                <div className="mt-4 flex gap-2">
+                  <button 
+                    onClick={()=>handleDelete(c.id)} 
+                    className="flex-1 px-3 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg shadow hover:from-red-600 hover:to-red-700 transition-all text-sm"
+                  >
+                    🗑 Supprimer
+                  </button>
+                  <button 
+                    onClick={()=>handleEdit(c)} 
+                    className="flex-1 px-3 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow hover:from-blue-600 hover:to-blue-700 transition-all text-sm"
+                  >
+                    ✏ Modifier
+                  </button>
+                </div>
               </div>
             </div>
           ))}

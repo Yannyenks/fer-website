@@ -122,18 +122,39 @@ if ($route === 'upload' && $method === 'POST') {
     }
 }
 
+// Admin registration with invitation token (secured)
 if ($route === 'admin/register' && $method === 'POST') {
     $data = get_raw_input();
     $username = $data['username'] ?? '';
     $password = $data['password'] ?? '';
     $email = $data['email'] ?? null;
+    $token = $data['invitation_token'] ?? '';
     
-    if (empty($username) || empty($password)) {
-        json_response(['error' => 'username and password required'], 400);
+    if (empty($username) || empty($password) || empty($token)) {
+        json_response(['error' => 'username, password and invitation_token required'], 400);
     }
     
     if (strlen($password) < 6) {
         json_response(['error' => 'password must be at least 6 characters'], 400);
+    }
+    
+    // Verify invitation token
+    $stmt = $pdo->prepare('SELECT * FROM admin_invitations WHERE token = ? AND used_at IS NULL AND expires_at > NOW() LIMIT 1');
+    $stmt->execute([$token]);
+    $invitation = $stmt->fetch();
+    
+    if (!$invitation) {
+        json_response(['error' => 'Invalid or expired invitation token'], 403);
+    }
+    
+    // If email is provided, verify it matches invitation
+    if ($invitation['email'] && $email && $invitation['email'] !== $email) {
+        json_response(['error' => 'Email does not match invitation'], 403);
+    }
+    
+    // Use invitation email if not provided
+    if (!$email && $invitation['email']) {
+        $email = $invitation['email'];
     }
     
     // Check if username exists
@@ -143,13 +164,160 @@ if ($route === 'admin/register' && $method === 'POST') {
         json_response(['error' => 'username already exists'], 409);
     }
     
+    // Check if email exists
+    if ($email) {
+        $stmt = $pdo->prepare('SELECT id FROM admins WHERE email = ? LIMIT 1');
+        $stmt->execute([$email]);
+        if ($stmt->fetch()) {
+            json_response(['error' => 'email already exists'], 409);
+        }
+    }
+    
     // Hash password and generate API key
     $hashed = password_hash($password, PASSWORD_BCRYPT);
     $api_key = bin2hex(random_bytes(32));
-    $stmt = $pdo->prepare('INSERT INTO admins (username, password, email, api_key, created_at) VALUES (?, ?, ?, ?, NOW())');
-    $stmt->execute([$username, $hashed, $email, $api_key]);
     
-    json_response(['ok' => true, 'id' => $pdo->lastInsertId(), 'api_key' => $api_key]);
+    try {
+        $pdo->beginTransaction();
+        
+        // Insert admin
+        $stmt = $pdo->prepare('INSERT INTO admins (username, password, email, api_key, created_at) VALUES (?, ?, ?, ?, NOW())');
+        $stmt->execute([$username, $hashed, $email, $api_key]);
+        $adminId = $pdo->lastInsertId();
+        
+        // Mark invitation as used
+        $stmt = $pdo->prepare('UPDATE admin_invitations SET used_at = NOW(), used_by = ? WHERE id = ?');
+        $stmt->execute([$adminId, $invitation['id']]);
+        
+        $pdo->commit();
+        
+        json_response(['ok' => true, 'id' => $adminId, 'api_key' => $api_key]);
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        json_response(['error' => 'Registration failed', 'message' => $e->getMessage()], 500);
+    }
+}
+
+// Create admin invitation (requires admin auth)
+if ($route === 'admin/invitations' && $method === 'POST') {
+    require_admin();
+    $data = get_raw_input();
+    $email = $data['email'] ?? null;
+    $expiresInHours = (int)($data['expires_in_hours'] ?? 48); // Default 48h
+    
+    if ($expiresInHours < 1 || $expiresInHours > 168) { // Max 7 days
+        json_response(['error' => 'expires_in_hours must be between 1 and 168'], 400);
+    }
+    
+    // Generate unique token
+    $token = bin2hex(random_bytes(32));
+    $expiresAt = date('Y-m-d H:i:s', time() + ($expiresInHours * 3600));
+    
+    // Get admin ID from API key
+    $adminKey = $_SERVER['HTTP_X_ADMIN_KEY'] ?? '';
+    $stmt = $pdo->prepare('SELECT id FROM admins WHERE api_key = ? LIMIT 1');
+    $stmt->execute([$adminKey]);
+    $admin = $stmt->fetch();
+    
+    if (!$admin) {
+        json_response(['error' => 'Admin not found'], 404);
+    }
+    
+    try {
+        $stmt = $pdo->prepare('INSERT INTO admin_invitations (token, created_by, email, expires_at) VALUES (?, ?, ?, ?)');
+        $stmt->execute([$token, $admin['id'], $email, $expiresAt]);
+        
+        $invitationId = $pdo->lastInsertId();
+        
+        json_response([
+            'ok' => true,
+            'id' => $invitationId,
+            'token' => $token,
+            'expires_at' => $expiresAt,
+            'invitation_link' => '/admin-register?token=' . $token
+        ]);
+    } catch (PDOException $e) {
+        json_response(['error' => 'Failed to create invitation', 'message' => $e->getMessage()], 500);
+    }
+}
+
+// Get admin invitations list (requires admin auth)
+if ($route === 'admin/invitations' && $method === 'GET') {
+    require_admin();
+    
+    // Get admin ID from API key
+    $adminKey = $_SERVER['HTTP_X_ADMIN_KEY'] ?? '';
+    $stmt = $pdo->prepare('SELECT id FROM admins WHERE api_key = ? LIMIT 1');
+    $stmt->execute([$adminKey]);
+    $admin = $stmt->fetch();
+    
+    if (!$admin) {
+        json_response(['error' => 'Admin not found'], 404);
+    }
+    
+    // Get all invitations created by this admin
+    $stmt = $pdo->prepare('
+        SELECT 
+            ai.*,
+            a_used.username as used_by_username
+        FROM admin_invitations ai
+        LEFT JOIN admins a_used ON ai.used_by = a_used.id
+        WHERE ai.created_by = ?
+        ORDER BY ai.created_at DESC
+    ');
+    $stmt->execute([$admin['id']]);
+    $invitations = $stmt->fetchAll();
+    
+    json_response(['invitations' => $invitations]);
+}
+
+// Verify invitation token (public endpoint)
+if (preg_match('#^admin/invitations/verify/([a-f0-9]+)$#', $route, $m) && $method === 'GET') {
+    $token = $m[1];
+    
+    $stmt = $pdo->prepare('SELECT id, email, expires_at, used_at FROM admin_invitations WHERE token = ? LIMIT 1');
+    $stmt->execute([$token]);
+    $invitation = $stmt->fetch();
+    
+    if (!$invitation) {
+        json_response(['valid' => false, 'error' => 'Invalid token'], 404);
+    }
+    
+    if ($invitation['used_at']) {
+        json_response(['valid' => false, 'error' => 'Token already used'], 400);
+    }
+    
+    if (strtotime($invitation['expires_at']) < time()) {
+        json_response(['valid' => false, 'error' => 'Token expired'], 400);
+    }
+    
+    json_response([
+        'valid' => true,
+        'email' => $invitation['email'],
+        'expires_at' => $invitation['expires_at']
+    ]);
+}
+
+// Delete invitation (requires admin auth)
+if (preg_match('#^admin/invitations/(\d+)$#', $route, $m) && $method === 'DELETE') {
+    require_admin();
+    $id = (int)$m[1];
+    
+    // Get admin ID from API key
+    $adminKey = $_SERVER['HTTP_X_ADMIN_KEY'] ?? '';
+    $stmt = $pdo->prepare('SELECT id FROM admins WHERE api_key = ? LIMIT 1');
+    $stmt->execute([$adminKey]);
+    $admin = $stmt->fetch();
+    
+    if (!$admin) {
+        json_response(['error' => 'Admin not found'], 404);
+    }
+    
+    // Only allow deletion of own invitations
+    $stmt = $pdo->prepare('DELETE FROM admin_invitations WHERE id = ? AND created_by = ?');
+    $stmt->execute([$id, $admin['id']]);
+    
+    json_response(['ok' => true, 'deleted' => $stmt->rowCount()]);
 }
 
 if ($route === 'admin/login' && $method === 'POST') {
@@ -216,11 +384,23 @@ if ($route === 'categories' && $method === 'GET') {
 
 if ($route === 'candidates' && $method === 'GET') {
     $q = $_GET['q'] ?? null;
+    $type = $_GET['type'] ?? null; // Filter by type (miss/awards)
+    
     if ($q) {
-        $stmt = $pdo->prepare('SELECT * FROM candidates WHERE name LIKE ? ORDER BY name');
-        $stmt->execute(['%'.$q.'%']);
+        if ($type && in_array($type, ['miss', 'awards'])) {
+            $stmt = $pdo->prepare('SELECT * FROM candidates WHERE name LIKE ? AND type = ? ORDER BY name');
+            $stmt->execute(['%'.$q.'%', $type]);
+        } else {
+            $stmt = $pdo->prepare('SELECT * FROM candidates WHERE name LIKE ? ORDER BY name');
+            $stmt->execute(['%'.$q.'%']);
+        }
     } else {
-        $stmt = $pdo->query('SELECT * FROM candidates ORDER BY name');
+        if ($type && in_array($type, ['miss', 'awards'])) {
+            $stmt = $pdo->prepare('SELECT * FROM candidates WHERE type = ? ORDER BY name');
+            $stmt->execute([$type]);
+        } else {
+            $stmt = $pdo->query('SELECT * FROM candidates ORDER BY name');
+        }
     }
     json_response(['candidates' => $stmt->fetchAll()]);
 }
@@ -263,8 +443,15 @@ if ($route === 'candidate' && $method === 'POST') {
     
     try {
         $extra = isset($data['extra']) ? (is_string($data['extra']) ? $data['extra'] : json_encode($data['extra'])) : null;
-        $stmt = $pdo->prepare('INSERT INTO candidates (name, category_id, bio, image, votes, extra) VALUES (?, ?, ?, ?, 0, ?)');
-        $stmt->execute([$data['name'] ?? null, $category_id, $data['bio'] ?? null, $imageUrl, $extra]);
+        $type = $data['type'] ?? 'miss'; // Default to 'miss' if not specified
+        
+        // Validate type
+        if (!in_array($type, ['miss', 'awards'])) {
+            $type = 'miss';
+        }
+        
+        $stmt = $pdo->prepare('INSERT INTO candidates (name, type, category_id, bio, image, votes, extra) VALUES (?, ?, ?, ?, ?, 0, ?)');
+        $stmt->execute([$data['name'] ?? null, $type, $category_id, $data['bio'] ?? null, $imageUrl, $extra]);
         
         $candidateId = $pdo->lastInsertId();
         
@@ -287,11 +474,35 @@ if ($route === 'vote' && $method === 'POST') {
     $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
     $ip_hash = hash_ip($ip);
 
-    // Prevent duplicate votes: one vote per visitor/IP TOTAL (not per candidate)
-    $stmt = $pdo->prepare('SELECT id, candidate_id FROM votes WHERE visitor_id = ? OR ip_hash = ? LIMIT 1');
-    $stmt->execute([$visitor, $ip_hash]);
+    // Get the candidate's type (miss or awards)
+    $stmt = $pdo->prepare('SELECT type FROM candidates WHERE id = ? LIMIT 1');
+    $stmt->execute([$candidate_id]);
+    $candidate = $stmt->fetch();
+    if (!$candidate) json_response(['error' => 'candidate_not_found'], 404);
+    
+    $candidate_type = $candidate['type'] ?? 'miss';
+
+    // Prevent duplicate votes: one vote per visitor/IP per CATEGORY (miss or awards)
+    // Check if user already voted for a candidate of the same type
+    $stmt = $pdo->prepare('
+        SELECT v.id, v.candidate_id, c.name, c.type 
+        FROM votes v 
+        INNER JOIN candidates c ON v.candidate_id = c.id 
+        WHERE (v.visitor_id = ? OR v.ip_hash = ?) AND c.type = ?
+        LIMIT 1
+    ');
+    $stmt->execute([$visitor, $ip_hash, $candidate_type]);
     $found = $stmt->fetch();
-    if ($found) json_response(['ok' => false, 'error' => 'already_voted', 'voted_for' => $found['candidate_id']], 409);
+    
+    if ($found) {
+        json_response([
+            'ok' => false, 
+            'error' => 'already_voted', 
+            'voted_for' => $found['candidate_id'],
+            'voted_for_name' => $found['name'],
+            'category' => $candidate_type
+        ], 409);
+    }
 
     try {
         $pdo->beginTransaction();
@@ -305,7 +516,7 @@ if ($route === 'vote' && $method === 'POST') {
         json_response(['error' => 'db_error', 'msg' => $e->getMessage()], 500);
     }
 
-    json_response(['ok' => true]);
+    json_response(['ok' => true, 'category' => $candidate_type]);
 }
 
 // Get voting statistics (admin)
@@ -455,8 +666,12 @@ if (preg_match('#^candidate/(\d+)$#', $route, $m) && $method === 'PUT') {
     
     $fields = [];
     $params = [];
-    foreach (['name','category_id','bio','image'] as $f) {
+    foreach (['name','type','category_id','bio','image'] as $f) {
         if (array_key_exists($f, $data)) {
+            // Validate type if provided
+            if ($f === 'type' && !in_array($data[$f], ['miss', 'awards'])) {
+                continue; // Skip invalid type values
+            }
             $fields[] = "$f = ?";
             $params[] = $data[$f];
         }

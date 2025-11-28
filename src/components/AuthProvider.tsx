@@ -11,8 +11,10 @@ type User = {
 
 type AuthContextType = {
   user: User | null;
+  loading: boolean;
   login: (username: string, password: string, isAdmin?: boolean) => Promise<User | null>;
   register: (username: string, email: string, password: string, isAdmin?: boolean) => Promise<User | null>;
+  registerAdmin: (username: string, email: string, password: string, invitationToken: string) => Promise<User | null>;
   logout: () => Promise<void>;
 };
 
@@ -26,6 +28,7 @@ export const useAuth = () => {
 
 export const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Restore user from localStorage (PHP backend uses API key auth)
@@ -42,6 +45,7 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }
         localStorage.removeItem('jvepi_user');
       }
     }
+    setLoading(false);
   }, []);
 
   const login = async (username: string, password: string, isAdmin: boolean = false) => {
@@ -108,59 +112,90 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }
       if (!email.trim() || !email.includes('@')) throw new Error('Email valide requis');
       if (password.length < 6) throw new Error('Mot de passe minimum 6 caractères');
 
+      // isAdmin is deprecated - should use registerAdmin() with invitation token
       if (isAdmin) {
-        // Inscription admin via API backend
-        const res = await api.post('/admin/register', { username, email, password });
+        throw new Error('L\'inscription admin nécessite un lien d\'invitation. Utilisez registerAdmin() à la place.');
+      }
+
+      // Inscription utilisateur normal via API backend
+      const res = await api.post('/user/register', { username, email, password });
+      
+      if (res.data.ok && res.data.user) {
+        const userData = {
+          id: res.data.user.id,
+          username: res.data.user.username,
+          email: res.data.user.email,
+          name: res.data.user.username,
+          role: 'user',
+          created_at: res.data.user.created_at
+        };
         
-        if (res.data.ok && res.data.api_key) {
-          const userData = { 
-            id: res.data.id, 
-            username, 
-            email, 
-            api_key: res.data.api_key, 
-            role: 'admin',
-            name: username
-          };
-          setUser(userData);
-          localStorage.setItem('jvepi_user', JSON.stringify(userData));
-          // Set API key header for future requests
-          api.defaults.headers.common['X-ADMIN-KEY'] = userData.api_key;
-          return userData;
-        } else {
-          throw new Error(res.data.error || 'Erreur lors de l\'inscription admin');
-        }
+        setUser(userData);
+        localStorage.setItem('jvepi_user', JSON.stringify(userData));
+        return userData;
       } else {
-        // Inscription utilisateur normal via API backend
-        const res = await api.post('/user/register', { username, email, password });
-        
-        if (res.data.ok && res.data.user) {
-          const userData = {
-            id: res.data.user.id,
-            username: res.data.user.username,
-            email: res.data.user.email,
-            name: res.data.user.username,
-            role: 'user',
-            created_at: res.data.user.created_at
-          };
-          
-          setUser(userData);
-          localStorage.setItem('jvepi_user', JSON.stringify(userData));
-          return userData;
-        } else {
-          throw new Error(res.data.error || 'Erreur lors de l\'inscription utilisateur');
-        }
+        throw new Error(res.data.error || 'Erreur lors de l\'inscription utilisateur');
       }
     } catch (err: any) {
       console.error('Registration failed:', err);
       // Gérer les erreurs spécifiques du backend
       if (err.response?.status === 409) {
-        throw new Error('Ce nom d\'utilisateur existe déjà');
+        throw new Error('Ce nom d\'utilisateur ou cet email existe déjà');
       } else if (err.response?.status === 400) {
         throw new Error(err.response.data?.error || 'Données invalides');
       } else if (err.message) {
         throw new Error(err.message);
       }
       throw new Error('Erreur lors de l\'inscription');
+    }
+  };
+
+  const registerAdmin = async (username: string, email: string, password: string, invitationToken: string) => {
+    try {
+      // Validation côté client
+      if (!username.trim()) throw new Error('Le nom d\'utilisateur est requis');
+      if (!email.trim() || !email.includes('@')) throw new Error('Email valide requis');
+      if (password.length < 6) throw new Error('Mot de passe minimum 6 caractères');
+      if (!invitationToken.trim()) throw new Error('Token d\'invitation requis');
+
+      // Inscription admin avec token d'invitation
+      const res = await api.post('/admin/register', { 
+        username, 
+        email, 
+        password,
+        invitation_token: invitationToken
+      });
+      
+      if (res.data.ok && res.data.api_key) {
+        const userData = { 
+          id: res.data.id, 
+          username, 
+          email, 
+          api_key: res.data.api_key, 
+          role: 'admin',
+          name: username
+        };
+        setUser(userData);
+        localStorage.setItem('jvepi_user', JSON.stringify(userData));
+        // Set API key header for future requests
+        api.defaults.headers.common['X-ADMIN-KEY'] = userData.api_key;
+        return userData;
+      } else {
+        throw new Error(res.data.error || 'Erreur lors de l\'inscription admin');
+      }
+    } catch (err: any) {
+      console.error('Admin registration failed:', err);
+      // Gérer les erreurs spécifiques du backend
+      if (err.response?.status === 403) {
+        throw new Error('Token d\'invitation invalide ou expiré');
+      } else if (err.response?.status === 409) {
+        throw new Error('Ce nom d\'utilisateur ou cet email existe déjà');
+      } else if (err.response?.status === 400) {
+        throw new Error(err.response.data?.error || 'Données invalides');
+      } else if (err.message) {
+        throw new Error(err.message);
+      }
+      throw new Error('Erreur lors de l\'inscription admin');
     }
   };
 
@@ -171,7 +206,7 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, registerAdmin, logout }}>
       {children}
     </AuthContext.Provider>
   );

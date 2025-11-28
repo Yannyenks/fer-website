@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Auth Admin</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .status-box {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .success { color: #059669; }
+        .error { color: #dc2626; }
+        .warning { color: #d97706; }
+        pre {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        .logout {
+            background: #ef4444;
+        }
+        .logout:hover {
+            background: #dc2626;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔐 Test Authentification Admin</h1>
+    
+    <div class="status-box">
+        <h2>État du localStorage</h2>
+        <pre id="localStorage-status">Chargement...</pre>
+    </div>
+
+    <div class="status-box">
+        <h2>Actions</h2>
+        <button onclick="checkAuth()">Vérifier l'authentification</button>
+        <button onclick="clearAuth()" class="logout">Déconnexion</button>
+    </div>
+
+    <div class="status-box">
+        <h2>Résultat</h2>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function displayLocalStorage() {
+            const user = localStorage.getItem('jvepi_user');
+            const status = document.getElementById('localStorage-status');
+            
+            if (user) {
+                try {
+                    const userData = JSON.parse(user);
+                    status.innerHTML = `<span class="success">✅ Utilisateur trouvé dans localStorage</span>\n\n${JSON.stringify(userData, null, 2)}`;
+                } catch (e) {
+                    status.innerHTML = `<span class="error">❌ Données corrompues</span>\n\n${user}`;
+                }
+            } else {
+                status.innerHTML = `<span class="warning">⚠️ Aucun utilisateur dans localStorage</span>`;
+            }
+        }
+
+        async function checkAuth() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>⏳ Vérification...</p>';
+
+            const user = localStorage.getItem('jvepi_user');
+            if (!user) {
+                resultDiv.innerHTML = '<p class="error">❌ Vous n\'êtes pas connecté</p>';
+                return;
+            }
+
+            try {
+                const userData = JSON.parse(user);
+                resultDiv.innerHTML = `
+                    <h3 class="success">✅ Informations de l'utilisateur :</h3>
+                    <ul>
+                        <li><strong>ID:</strong> ${userData.id}</li>
+                        <li><strong>Username:</strong> ${userData.username || 'N/A'}</li>
+                        <li><strong>Email:</strong> ${userData.email || 'N/A'}</li>
+                        <li><strong>Role:</strong> ${userData.role || 'N/A'}</li>
+                        <li><strong>API Key:</strong> ${userData.api_key ? '✅ Présente' : '❌ Absente'}</li>
+                    </ul>
+                `;
+
+                // Test API call
+                if (userData.api_key) {
+                    resultDiv.innerHTML += '<p>🔄 Test d\'appel API...</p>';
+                    
+                    const response = await fetch('/api/admin/invitations', {
+                        headers: {
+                            'X-ADMIN-KEY': userData.api_key
+                        }
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        resultDiv.innerHTML += `<p class="success">✅ API accessible ! ${data.invitations ? data.invitations.length : 0} invitation(s) trouvée(s)</p>`;
+                    } else {
+                        const error = await response.text();
+                        resultDiv.innerHTML += `<p class="error">❌ Erreur API (${response.status}): ${error}</p>`;
+                    }
+                }
+            } catch (e) {
+                resultDiv.innerHTML = `<p class="error">❌ Erreur: ${e.message}</p>`;
+            }
+        }
+
+        function clearAuth() {
+            localStorage.removeItem('jvepi_user');
+            displayLocalStorage();
+            document.getElementById('result').innerHTML = '<p class="success">✅ Déconnecté</p>';
+        }
+
+        // Init
+        displayLocalStorage();
+    </script>
+</body>
+</html>

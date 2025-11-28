@@ -18,7 +18,7 @@ const MissMasterHome: React.FC = () => {
       >
         <h1 className="text-5xl md:text-6xl font-bold tracking-wider"
             style={{ color: "#d4af37" }}>
-          Miss • Master FER 2025
+          Miss FER 2025
         </h1>
 
         <p className="max-w-2xl mt-6 text-lg text-gray-200">

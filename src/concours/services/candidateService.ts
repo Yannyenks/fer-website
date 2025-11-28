@@ -56,6 +56,7 @@ export async function getAllCandidates(): Promise<Candidate[]> {
       return {
         id: c.id,
         name: c.name,
+        type: c.type || 'miss',
         slug: extra.slug || `candidate-${c.id}`,
         age: extra.age || 20,
         origin: extra.origin || '',
@@ -88,6 +89,7 @@ export async function addCandidate(payload: Omit<Candidate, 'id'|'votes'> & Part
     // Prepare data for backend
     const backendPayload = {
       name: payload.name,
+      type: payload.type || 'miss',
       bio: payload.bio || '',
       image: payload.photo || '',
       category_id: 1, // Default category
@@ -106,6 +108,7 @@ export async function addCandidate(payload: Omit<Candidate, 'id'|'votes'> & Part
     const newCandidate: Candidate = {
       id: res.data.id,
       name: payload.name,
+      type: payload.type || 'miss',
       slug: payload.slug,
       age: payload.age,
       origin: payload.origin,
@@ -148,6 +151,7 @@ export async function updateCandidate(id: number, changes: Partial<Candidate>): 
     const backendPayload: any = {};
     
     if (changes.name !== undefined) backendPayload.name = changes.name;
+    if (changes.type !== undefined) backendPayload.type = changes.type;
     if (changes.bio !== undefined) backendPayload.bio = changes.bio;
     if (changes.photo !== undefined) backendPayload.image = changes.photo;
     
@@ -180,6 +184,7 @@ export async function updateCandidate(id: number, changes: Partial<Candidate>): 
     return {
       id: updatedCandidate.id,
       name: updatedCandidate.name,
+      type: updatedCandidate.type || 'miss',
       slug: extra.slug || '',
       age: extra.age || 20,
       origin: extra.origin || '',

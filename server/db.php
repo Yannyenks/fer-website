@@ -2,8 +2,6 @@
 require_once __DIR__ . '/env.php';
 
 function db_connect(): PDO {
-    echo "<h2>Fichier réel résolu</h2>";
-
     static $pdo = null;
     if ($pdo !== null) return $pdo;
     
@@ -13,8 +11,6 @@ function db_connect(): PDO {
     $user = env('DB_USER', 'root');
     $pass = env('DB_PASS', '');
     $dsn = "mysql:host={$host};port={$port};dbname={$name};charset=utf8mb4";
-
-    echo "mysql:host={$host};port={$port};dbname={$name};charset=utf8mb4";
     $options = [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,

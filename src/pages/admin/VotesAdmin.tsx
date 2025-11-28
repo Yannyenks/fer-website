@@ -59,7 +59,7 @@ const VotesAdmin: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen p-6 bg-gray-50">
+    <div className="min-h-screen p-10 bg-gray-50">
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Statistiques des votes</h1>
@@ -79,7 +79,7 @@ const VotesAdmin: React.FC = () => {
         )}
 
         {stats && (
-          <div className="bg-white p-6 rounded shadow mb-6">
+          <div className="bg-white p-6 rounded shadow-sm mb-6">
             <h2 className="text-xl font-semibold mb-2">Résumé</h2>
             <p className="text-lg">
               Total des votes: <span className="font-bold text-green-600">{stats.total_votes}</span>
@@ -90,7 +90,7 @@ const VotesAdmin: React.FC = () => {
           </div>
         )}
 
-        <div className="bg-white rounded shadow overflow-hidden">
+        <div className="bg-white rounded shadow-sm overflow-hidden">
           <table className="w-full">
             <thead className="bg-gray-100">
               <tr>
@@ -122,16 +122,6 @@ const VotesAdmin: React.FC = () => {
               })}
             </tbody>
           </table>
-        </div>
-
-        <div className="mt-6 p-4 bg-blue-50 rounded">
-          <h3 className="font-semibold text-blue-900 mb-2">ℹ️ À propos</h3>
-          <ul className="text-sm text-blue-800 space-y-1">
-            <li>• <strong>Votes (DB)</strong>: Nombre stocké dans la colonne <code>votes</code> de la table <code>candidates</code></li>
-            <li>• <strong>Votes (Réels)</strong>: Nombre réel compté depuis la table <code>votes</code></li>
-            <li>• Si les deux colonnes ne correspondent pas, cliquez sur "Synchroniser les votes"</li>
-            <li>• La synchronisation recalcule tous les compteurs depuis la table votes</li>
-          </ul>
         </div>
       </div>
     </div>

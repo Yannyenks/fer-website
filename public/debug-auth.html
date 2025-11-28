@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug & Fix Auth</title>
+    <style>
+        body { font-family: system-ui; padding: 30px; background: #f0f0f0; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #2563eb; }
+        .status { padding: 15px; margin: 15px 0; border-radius: 5px; }
+        .success { background: #d1fae5; border-left: 4px solid #059669; }
+        .error { background: #fee2e2; border-left: 4px solid #dc2626; }
+        .warning { background: #fef3c7; border-left: 4px solid #d97706; }
+        pre { background: #f9fafb; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 12px; }
+        button { background: #3b82f6; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; margin: 10px 5px; font-size: 14px; }
+        button:hover { background: #2563eb; }
+        button.danger { background: #ef4444; }
+        button.danger:hover { background: #dc2626; }
+        button.success { background: #10b981; }
+        button.success:hover { background: #059669; }
+        input { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #d1d5db; border-radius: 5px; }
+        label { font-weight: 600; display: block; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Debug & Fix Authentication</h1>
+        
+        <div id="status"></div>
+        
+        <h2>🔐 Login Admin</h2>
+        <form id="loginForm">
+            <label>Username:</label>
+            <input type="text" id="username" value="Darrel" required>
+            
+            <label>Password:</label>
+            <input type="password" id="password" required>
+            
+            <button type="submit" class="success">Se connecter en tant qu'Admin</button>
+        </form>
+        
+        <h2>📊 Actions</h2>
+        <button onclick="checkStatus()">Vérifier l'état</button>
+        <button onclick="clearAuth()" class="danger">Déconnexion</button>
+        <button onclick="testAPI()">Tester l'API</button>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000/api';
+
+        function displayStatus() {
+            const statusDiv = document.getElementById('status');
+            const user = localStorage.getItem('jvepi_user');
+            
+            if (!user) {
+                statusDiv.innerHTML = '<div class="status error">❌ Aucun utilisateur connecté</div>';
+                return;
+            }
+
+            try {
+                const userData = JSON.parse(user);
+                const hasApiKey = !!userData.api_key;
+                const isAdmin = userData.role === 'admin';
+                
+                let html = '<div class="status ' + (hasApiKey && isAdmin ? 'success' : 'warning') + '">';
+                
+                if (hasApiKey && isAdmin) {
+                    html += '✅ Connexion admin valide';
+                } else if (!isAdmin) {
+                    html += '⚠️ Connecté mais pas en tant qu\'admin';
+                } else if (!hasApiKey) {
+                    html += '⚠️ Admin sans API key - Reconnexion nécessaire';
+                }
+                
+                html += '</div><pre>' + JSON.stringify(userData, null, 2) + '</pre>';
+                statusDiv.innerHTML = html;
+            } catch (e) {
+                statusDiv.innerHTML = '<div class="status error">❌ Données corrompues</div>';
+            }
+        }
+
+        function checkStatus() {
+            displayStatus();
+        }
+
+        function clearAuth() {
+            localStorage.removeItem('jvepi_user');
+            displayStatus();
+            alert('✅ Déconnecté !');
+        }
+
+        async function testAPI() {
+            const user = localStorage.getItem('jvepi_user');
+            if (!user) {
+                alert('❌ Vous devez être connecté !');
+                return;
+            }
+
+            const userData = JSON.parse(user);
+            if (!userData.api_key) {
+                alert('❌ Pas d\'API key ! Reconnectez-vous.');
+                return;
+            }
+
+            try {
+                const response = await fetch(API_BASE + '/admin/invitations', {
+                    headers: {
+                        'X-ADMIN-KEY': userData.api_key
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert('✅ API OK ! ' + (data.invitations?.length || 0) + ' invitation(s)');
+                } else {
+                    alert('❌ Erreur API: ' + (data.error || 'Unknown'));
+                }
+            } catch (error) {
+                alert('❌ Exception: ' + error.message);
+            }
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch(API_BASE + '/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+                
+                if (data.ok && data.admin) {
+                    const userData = {
+                        ...data.admin,
+                        role: 'admin',
+                        name: data.admin.username
+                    };
+                    
+                    localStorage.setItem('jvepi_user', JSON.stringify(userData));
+                    alert('✅ Connexion réussie !');
+                    displayStatus();
+                } else {
+                    alert('❌ Erreur: ' + (data.error || 'Invalid credentials'));
+                }
+            } catch (error) {
+                alert('❌ Exception: ' + error.message);
+            }
+        });
+
+        // Init
+        displayStatus();
+    </script>
+</body>
+</html>

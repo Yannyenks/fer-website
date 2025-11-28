@@ -1,49 +1,163 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-const actions = [
-  { id: 'vote', title: 'Voter (candidate)', description: "Vote pour une candidate depuis la liste ou la fiche candidate." , files: ['concours/components/CandidateCard.tsx','concours/pages/CandidateProfile.tsx']},
-  { id: 'share', title: 'Partager (candidate)', description: "Partager le profil / la fiche d'une candidate via le presse-papiers." , files: ['concours/components/CandidateCard.tsx']},
-  { id: 'vote-modal-confirm', title: 'Confirmation du vote (modal)', description: "Boutons dans le modal de vote (confirmer/annuler)." , files: ['concours/components/VoteModal.tsx']},
-  { id: 'fer-enroll', title: "S'inscrire / Participer (FER CTA)", description: "CTA principal sur la section FER2025 qui renvoie à l'inscription/participation.", files: ['components/FER2025.tsx','pages/Inscription.tsx']},
-  { id: 'event-signup', title: 'Inscription à un événement', description: "Bouton sur la page détail d'un événement pour s'inscrire/participer.", files: ['pages/EventDetail.tsx']},
-  { id: 'login', title: 'Se connecter', description: "Bouton de soumission du formulaire de connexion.", files: ['pages/Login.tsx']},
-  { id: 'register', title: 'Créer (inscription)', description: "Bouton de soumission du formulaire d'inscription.", files: ['pages/Register.tsx','pages/Inscription.tsx']},
-  { id: 'logout', title: 'Se déconnecter', description: "Bouton pour se déconnecter du profil.", files: ['pages/Profile.tsx','components/AuthProvider.tsx']},
-  { id: 'cancel-fer', title: 'Annuler inscription FER', description: "Bouton qui annule la participation FER de l'utilisateur.", files: ['pages/Profile.tsx']},
-  { id: 'inscription-submit', title: "Je m'inscris et participe", description: "Bouton d'inscription avec photo sur la page d'inscription.", files: ['pages/Inscription.tsx']},
-  { id: 'events-filter', title: 'Filtres d\'événements', description: "Boutons de filtre ('Tous' + types) sur la page Events.", files: ['pages/EventsPage.tsx']},
-  { id: 'rejoignez-nous', title: 'Rejoignez-nous (header)', description: "Bouton du header qui scroll vers le contact.", files: ['components/Header.tsx']},
-];
-
 const ActionsIndex: React.FC = () => {
   return (
-    <div className="container mx-auto px-6 py-12">
-      <h1 className="text-3xl font-bold mb-6">Admin — Actions & Outils</h1>
-      <p className="mb-6">Tableau de bord d'administration pour gérer les actions, assets et outils du site. Accessible uniquement aux administrateurs.</p>
-
-      <div className="grid md:grid-cols-2 gap-4">
-        <div className="p-4 bg-white rounded shadow">
-          <h3 className="font-semibold mb-2">Raccourcis administrateur</h3>
-          <ul className="space-y-2 text-sm">
-            <li><Link to="/admin" className="text-green-700 underline">Tableau de bord admin principal</Link></li>
-            <li><Link to="/admin/candidates" className="text-green-700 underline">Gérer les candidats (CRUD)</Link></li>
-            <li><Link to="/admin/section-images" className="text-green-700 underline">Gérer les images des sections</Link></li>
-            <li><Link to="/events" className="text-green-700 underline">Gérer / voir les événements</Link></li>
-          </ul>
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
+      <div className="container mx-auto max-w-4xl">
+        {/* En-tête avec effet glass */}
+        <div className="mb-8 sm:mb-10 lg:mb-12 backdrop-blur-xl bg-white/40 rounded-3xl shadow-sm border border-white/50 p-6 sm:p-8 lg:p-10">
+          <div className="flex items-center mb-4">
+            <div className="w-3 h-12 bg-gradient-to-b from-emerald-500 to-green-600 rounded-full mr-4"></div>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-emerald-700 to-green-600 bg-clip-text text-transparent">
+              Admin — Tableau de bord
+            </h1>
+          </div>
+          <p className="text-base sm:text-lg lg:text-xl text-gray-700 ml-7">
+            Gérez votre plateforme FER Awards en toute simplicité.
+          </p>
         </div>
 
-        <div className="p-4 bg-white rounded shadow">
-          <h3 className="font-semibold mb-2">Actions détectées sur le site</h3>
-          <p className="text-sm text-gray-600 mb-3">Référence rapide des boutons et actions présents dans l'application.</p>
-          <ul className="text-sm space-y-2">
-            {actions.map(a => (
-              <li key={a.id} className="border-l-2 pl-3 py-2">
-                <div className="font-medium">{a.title}</div>
-                <div className="text-xs text-gray-500">{a.description}</div>
-              </li>
-            ))}
-          </ul>
+        {/* Grille des raccourcis avec effet glass */}
+        <div className="backdrop-blur-xl bg-white/30 rounded-3xl shadow-sm border border-white/50 p-6 sm:p-8 lg:p-10">
+          <div className="flex items-center mb-6 sm:mb-8">
+            <div className="w-2 h-8 bg-gradient-to-b from-emerald-500 to-green-600 rounded-full mr-4"></div>
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Raccourcis administrateur</h2>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+            {/* Dashboard principal */}
+            <Link 
+              to="/admin" 
+              className="group backdrop-blur-lg bg-gradient-to-br from-emerald-100/60 to-green-100/60 hover:from-emerald-200/70 hover:to-green-200/70 rounded-2xl shadow-sm border border-white/60 p-5 sm:p-6 transition-all duration-300 hover:shadow-md hover:scale-105"
+            >
+              <div className="flex items-start">
+                <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-300">
+                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                  </svg>
+                </div>
+                <div className="ml-4 flex-1">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-1 group-hover:text-emerald-700 transition-colors">
+                    Tableau de bord
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Vue d'ensemble et statistiques
+                  </p>
+                </div>
+              </div>
+            </Link>
+
+            {/* Gestion des candidats */}
+            <Link 
+              to="/admin/candidates" 
+              className="group backdrop-blur-lg bg-gradient-to-br from-emerald-100/60 to-green-100/60 hover:from-emerald-200/70 hover:to-green-200/70 rounded-2xl shadow-sm border border-white/60 p-5 sm:p-6 transition-all duration-300 hover:shadow-md hover:scale-105"
+            >
+              <div className="flex items-start">
+                <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-300">
+                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <div className="ml-4 flex-1">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-1 group-hover:text-emerald-700 transition-colors">
+                    Candidats
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Gérer Miss & Awards
+                  </p>
+                </div>
+              </div>
+            </Link>
+
+            {/* Statistiques de votes */}
+            <Link 
+              to="/admin/votes" 
+              className="group backdrop-blur-lg bg-gradient-to-br from-emerald-100/60 to-green-100/60 hover:from-emerald-200/70 hover:to-green-200/70 rounded-2xl shadow-sm border border-white/60 p-5 sm:p-6 transition-all duration-300 hover:shadow-md hover:scale-105"
+            >
+              <div className="flex items-start">
+                <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-300">
+                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+                <div className="ml-4 flex-1">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-1 group-hover:text-emerald-700 transition-colors">
+                    Votes
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Statistiques et analyses
+                  </p>
+                </div>
+              </div>
+            </Link>
+
+            {/* Images des sections */}
+            <Link 
+              to="/admin/section-images" 
+              className="group backdrop-blur-lg bg-gradient-to-br from-emerald-100/60 to-green-100/60 hover:from-emerald-200/70 hover:to-green-200/70 rounded-2xl shadow-sm border border-white/60 p-5 sm:p-6 transition-all duration-300 hover:shadow-md hover:scale-105"
+            >
+              <div className="flex items-start">
+                <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-300">
+                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div className="ml-4 flex-1">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-1 group-hover:text-emerald-700 transition-colors">
+                    Images
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Gérer les visuels des sections
+                  </p>
+                </div>
+              </div>
+            </Link>
+
+            {/* Invitations admin */}
+            <Link 
+              to="/admin/invitations" 
+              className="group backdrop-blur-lg bg-gradient-to-br from-emerald-100/60 to-green-100/60 hover:from-emerald-200/70 hover:to-green-200/70 rounded-2xl shadow-sm border border-white/60 p-5 sm:p-6 transition-all duration-300 hover:shadow-md hover:scale-105"
+            >
+              <div className="flex items-start">
+                <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-300">
+                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                </div>
+                <div className="ml-4 flex-1">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-1 group-hover:text-emerald-700 transition-colors">
+                    Invitations
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Créer des administrateurs
+                  </p>
+                </div>
+              </div>
+            </Link>
+
+            {/* Événements */}
+            <Link 
+              to="/events" 
+              className="group backdrop-blur-lg bg-gradient-to-br from-emerald-100/60 to-green-100/60 hover:from-emerald-200/70 hover:to-green-200/70 rounded-2xl shadow-sm border border-white/60 p-5 sm:p-6 transition-all duration-300 hover:shadow-md hover:scale-105"
+            >
+              <div className="flex items-start">
+                <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-300">
+                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div className="ml-4 flex-1">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-1 group-hover:text-emerald-700 transition-colors">
+                    Événements
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Gérer les événements FER
+                  </p>
+                </div>
+              </div>
+            </Link>
+          </div>
         </div>
       </div>
     </div>

@@ -27,7 +27,7 @@
 }
 
 .fer__title{
-  font-size: 1.6rem;
+  font-size: var(--font-size-h2);
   color: var(--fer-green);
   margin: 0 0 8px 0;
 }
@@ -92,8 +92,8 @@
   justify-content:space-between;
 }
 
-.fer__fig .num{ font-size:1.35rem; font-weight:700; color:var(--fer-earth); }
-.fer__fig .label{ color:#4b4b3d; font-size:0.9rem; }
+.fer__fig .num{ font-size: var(--font-size-h4); font-weight: var(--font-weight-bold); color:var(--fer-earth); }
+.fer__fig .label{ color:#4b4b3d; font-size: var(--font-size-body-small); }
 
 .fer__timeline{ margin-bottom: 20px; }
 .fer__timeline-list{ list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:12px; }
@@ -111,6 +111,5 @@
 
 @media (min-width:1100px){
   .fer__hero{ padding: 40px 24px; }
-  .fer__title{ font-size:2rem; }
   .fer__grid{ grid-template-columns: repeat(4, 1fr); gap:18px; }
 }

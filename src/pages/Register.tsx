@@ -9,7 +9,6 @@ const Register: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   
@@ -40,7 +39,8 @@ const Register: React.FC = () => {
     
     setLoading(true);
     try {
-      const user = await register(name, email, password, isAdmin);
+      // Inscription utilisateur normal uniquement (isAdmin = false)
+      const user = await register(name, email, password, false);
       if (user) {
         toast.show(`Inscription réussie ! Bienvenue ${user.name}`, 'success');
         navigate(redirect);
@@ -121,20 +121,6 @@ const Register: React.FC = () => {
             {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>}
           </div>
 
-          <div className="flex items-center space-x-2">
-            <input 
-              type="checkbox" 
-              id="isAdmin" 
-              checked={isAdmin} 
-              onChange={(e) => setIsAdmin(e.target.checked)}
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-              disabled={loading}
-            />
-            <label htmlFor="isAdmin" className="text-sm text-gray-700">
-              Compte administrateur (accès backend complet)
-            </label>
-          </div>
-
           <button 
             type="submit" 
             disabled={loading}
@@ -162,7 +148,7 @@ const Register: React.FC = () => {
 
         <div className="mt-4 p-3 bg-blue-50 rounded-lg">
           <p className="text-xs text-blue-700">
-            <strong>💡 Info :</strong> Compte utilisateur = participation concours | Compte admin = gestion backend complète
+            <strong>💡 Info :</strong> Cette inscription est pour les participants. Les administrateurs doivent utiliser un lien d'invitation spécial.
           </p>
         </div>
       </div>

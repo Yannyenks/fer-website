@@ -27,8 +27,9 @@ const CandidateProfile = () => {
 
   useEffect(() => {
     if (!user || !candidate) { setVoted(false); return; }
-    // Check if user has voted for ANY candidate
-    const hasVoted = !!localStorage.getItem(`user_has_voted_${user.id}`);
+    // Check if user has voted for this CATEGORY (miss or awards)
+    const categoryType = candidate.type || 'miss';
+    const hasVoted = !!localStorage.getItem(`user_voted_${categoryType}_${user.id}`);
     setVoted(hasVoted);
   }, [user, candidate]);
 
@@ -43,9 +44,13 @@ const CandidateProfile = () => {
       if (go) return navigate(`/inscription?redirect=/concours/candidate/${candidate.slug}`);
       return;
     }
-    const globalVoteKey = `user_has_voted_${user.id}`;
-    if (localStorage.getItem(globalVoteKey)) { 
-      toast.show('Vous avez déjà voté. Un seul vote par personne est autorisé.', 'info'); 
+    
+    const categoryType = candidate.type || 'miss';
+    const categoryVoteKey = `user_voted_${categoryType}_${user.id}`;
+    
+    if (localStorage.getItem(categoryVoteKey)) { 
+      const categoryLabel = categoryType === 'miss' ? 'Miss' : 'Awards';
+      toast.show(`Vous avez déjà voté dans la catégorie ${categoryLabel}. Un seul vote par catégorie est autorisé.`, 'info'); 
       return; 
     }
     
@@ -53,7 +58,7 @@ const CandidateProfile = () => {
       try {
         const response = await api.post('/vote', { candidate_id: candidate.id });
         if (response.data.ok) {
-          localStorage.setItem(globalVoteKey, candidate.id.toString());
+          localStorage.setItem(categoryVoteKey, candidate.id.toString());
           setVotes(votes + 1);
           setVoted(true);
           toast.show('Merci pour votre vote !', 'success');
@@ -61,12 +66,18 @@ const CandidateProfile = () => {
       } catch (error: any) {
         if (error.response?.status === 409) {
           const votedFor = error.response?.data?.voted_for;
-          if (votedFor) {
-            toast.show(`Vous avez déjà voté pour un autre candidat`, 'error');
-            localStorage.setItem(globalVoteKey, votedFor.toString());
+          const votedForName = error.response?.data?.voted_for_name;
+          const category = error.response?.data?.category;
+          const categoryLabel = category === 'miss' ? 'Miss' : 'Awards';
+          
+          if (votedForName) {
+            toast.show(`Vous avez déjà voté pour ${votedForName} dans la catégorie ${categoryLabel}`, 'error');
           } else {
-            toast.show('Vous avez déjà voté', 'error');
-            localStorage.setItem(globalVoteKey, '1');
+            toast.show(`Vous avez déjà voté dans la catégorie ${categoryLabel}`, 'error');
+          }
+          
+          if (votedFor) {
+            localStorage.setItem(categoryVoteKey, votedFor.toString());
           }
           setVoted(true);
         } else {
